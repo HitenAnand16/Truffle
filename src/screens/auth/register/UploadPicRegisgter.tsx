@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import { launchImageLibrary } from 'react-native-image-picker';
 
 const UploadPicRegisgter = ({ navigation }) => {
@@ -25,19 +26,39 @@ const UploadPicRegisgter = ({ navigation }) => {
         quality: 1,
       },
       response => {
-        if (response.didCancel) {
-          console.log('User canceled image picker');
-        } else if (response.errorCode) {
-          console.log('ImagePicker Error: ', response.errorMessage);
-        } else {
-          setImage(response.assets![0].uri);
+        try {
+          if (response.didCancel) {
+            console.log('User cancelled image picker');
+            return;
+          }
+          if (response.errorCode) {
+            console.log('ImagePicker Error:', response.errorMessage);
+            return;
+          }
+
+          // ✅ Safely handle undefined assets
+          const asset = response?.assets?.[0];
+          if (asset?.uri) {
+            setImage(asset.uri);
+          } else {
+            console.warn('No image selected or response missing assets');
+            alert('No valid image selected. Please try again.');
+          }
+        } catch (error) {
+          console.error('Image upload error:', error);
         }
       },
     );
   };
 
   const handleSubmit = () => {
-    setModalVisible(true); // Show the modal after submit
+    // Check if the image is set before showing the modal
+    if (image) {
+      setModalVisible(true); // Show the modal only if an image is uploaded
+    } else {
+      console.log('No image uploaded yet');
+      alert('Please upload an image first!');
+    }
   };
 
   return (
@@ -73,6 +94,9 @@ const UploadPicRegisgter = ({ navigation }) => {
             </>
           )}
         </TouchableOpacity>
+        <Text style={{ marginTop: 20, color: '#6B6B6B' }}>
+          Attach a clear and identifiable photo for smooth verification
+        </Text>
 
         <TouchableOpacity
           style={styles.nextButton}
@@ -96,12 +120,13 @@ const UploadPicRegisgter = ({ navigation }) => {
                 backgroundColor: 'white',
                 alignItems: 'center',
                 padding: 30,
-                borderRadius: 35,
+                borderRadius: 63,
                 elevation: 5, // For Android shadow
                 shadowColor: '#000', // Shadow color (for iOS)
-                shadowOffset: { width: 0, height: 2 }, // Shadow offset (horizontal, vertical)
-                shadowOpacity: 0.1, // Shadow opacity
-                shadowRadius: 10, // Shadow blur radius
+                shadowOffset: { width: 0, height: 0 }, // Shadow offset (horizontal, vertical)
+                shadowOpacity: 0.2, // Shadow opacity
+                shadowRadius: 40, // Shadow blur radius
+                height: '70%',
               }}
             >
               <Image
@@ -120,24 +145,71 @@ const UploadPicRegisgter = ({ navigation }) => {
             </View>
           </View>
           <TouchableOpacity
-            style={styles.button}
+            style={{
+              backgroundColor: 'white',
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              width: '80%',
+              padding: 20,
+              borderTopRightRadius: 20,
+              borderTopLeftRadius: 20,
+              marginBottom: 5,
+            }}
             onPress={() => {
-              navigation.navigate('Initial');
-              setModalVisible(false) // Navigate to the main screen
+              navigation.reset({ index: 0, routes: [{ name: 'Initial' }] });
+              setModalVisible(false); // Navigate to the main screen
             }}
           >
-            <Text style={styles.buttonText1}>Go Back to Main Screen</Text>
+            <View
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
+            >
+              <View
+                style={{
+                  backgroundColor: '#EDEDED',
+                  padding: 10,
+                  borderRadius: 8,
+                }}
+              >
+                <FontAwesome size={20} name="user-o" color={'black'} />
+              </View>
+              <Text style={styles.buttonText1}>My Information</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={'black'} />
           </TouchableOpacity>
 
-          {/* Track your application button */}
           <TouchableOpacity
-            style={styles.button}
+            style={{
+              backgroundColor: 'white',
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              width: '80%',
+              padding: 20,
+              borderBottomRightRadius: 20,
+              borderBottomLeftRadius: 20,
+              marginBottom: 5,
+            }}
             onPress={() => {
-              navigation.navigate('Track');
-              setModalVisible(false) // Navigate to the track application screen
+             navigation.reset({ index: 0, routes: [{ name: 'Track' }] })
+              setModalVisible(false); // Navigate to the main screen
             }}
           >
-            <Text style={styles.buttonText1}>Track Your Application</Text>
+            <View
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
+            >
+              <View
+                style={{
+                  backgroundColor: '#EDEDED',
+                  padding: 10,
+                  borderRadius: 8,
+                }}
+              >
+                <FontAwesome size={20} name="user-o" color={'black'} />
+              </View>
+              <Text style={styles.buttonText1}>My Information</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={'black'} />
           </TouchableOpacity>
         </View>
       </Modal>
@@ -167,8 +239,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   label: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: 22,
+    fontWeight: '400',
     marginBottom: 8,
     color: '#333',
   },
@@ -233,7 +305,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     width: '100%',
-    // height: '100%',
     justifyContent: 'center',
   },
   modalImage: {
@@ -243,7 +314,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   modalText: {
-    fontSize: 25,
+    fontSize: 24,
     fontWeight: '600',
     color: '#333',
     marginBottom: 10,
@@ -251,13 +322,11 @@ const styles = StyleSheet.create({
   modalSubText: {
     fontSize: 16,
     color: '#333',
-    marginBottom: 10,
+    marginVertical: 40,
     textAlign: 'center',
   },
   modalEmailText: {
-    fontSize: 14,
-    color: '#333',
-    marginBottom: 20,
+    color: '#6B6B6B',
     textAlign: 'center',
   },
   button: {
@@ -270,7 +339,7 @@ const styles = StyleSheet.create({
     width: '80%',
   },
   buttonText1: {
-    color: '#fff',
+    color: '#000',
     fontSize: 16,
     fontWeight: '600',
   },

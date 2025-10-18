@@ -12,6 +12,7 @@ import {
 import { demoData } from '../../../demoData'; // Importing demo data
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import Octicons from 'react-native-vector-icons/Octicons';
 import LinearGradient from 'react-native-linear-gradient';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 
@@ -66,7 +67,7 @@ const Home = ({ navigation }) => {
           }}
         >
           <TouchableOpacity>
-            <Ionicons name={'return-up-back'} size={30} color={'gray'} />
+            <Octicons name={'undo'} size={30} color={'gray'} />
           </TouchableOpacity>
           <TouchableOpacity>
             <Ionicons name={'filter'} size={30} color={'gray'} />
@@ -89,80 +90,106 @@ const Home = ({ navigation }) => {
       </Modal>
 
       {/* Card Stack */}
+      {/* Card Stack */}
       <View style={styles.cardStack}>
-        {demoData.map((user, index) => {
-          const isFront = index === currentIndex;
-          const cardStyle = {
-            ...styles.card,
-            zIndex: isFront ? 2 : 1,
-            width: isFront ? width - 40 : width - 70,
-            transform: isFront ? [{ translateY: 10 }] : [{ translateY: 0 }],
-          };
+        {(() => {
+          const frontCard = demoData[currentIndex];
+          const nextCard = demoData[(currentIndex + 1) % demoData.length]; // wrap-around next card
 
           return (
-            <ImageBackground
-              key={index}
-              source={{ uri: user.profilePicture }}
-              style={cardStyle}
-              imageStyle={styles.image}
-            >
-              <View style={styles.cardContent}>
-                <LinearGradient
-                  colors={['transparent', 'black']}
-                  style={{ width: '100%' }}
+            <>
+              {/* Back / Upcoming Card (slightly visible) */}
+              {nextCard && (
+                <ImageBackground
+                  source={{ uri: nextCard.profilePicture }}
+                  style={[
+                    styles.card,
+                    {
+                      width: width - 70, // Slightly smaller to show as a background card
+                      zIndex: 1, // Behind the front card
+                      transform: [{ translateY: -10 }], // Adjusted positioning for slight visibility
+                    },
+                  ]}
+                  imageStyle={styles.image}
+                >
+                  <LinearGradient
+                    colors={['transparent', 'black']}
+                    style={{
+                      flex: 1,
+                      justifyContent: 'flex-end',
+                      borderRadius: 20,
+                    }}
+                  >
+                    <Text
+                      style={[styles.name, { marginBottom: 20, opacity: 0.6 }]}
+                    >
+                      {nextCard.firstName} {nextCard.lastName}
+                    </Text>
+                  </LinearGradient>
+                </ImageBackground>
+              )}
+
+              {/* Front / Active Card (fully visible) */}
+              {frontCard && (
+                <ImageBackground
+                  source={{ uri: frontCard.profilePicture }}
+                  style={[
+                    styles.card,
+                    { width: width - 40, zIndex: 2 }, // Full width, in front
+                  ]}
+                  imageStyle={styles.image}
                 >
                   <TouchableOpacity
-                    style={{
-                      width: '100%',
-                      padding: 20,
-                      alignItems: 'flex-start',
-                      marginTop: 40,
-                    }}
-                    onPress={() => handleCardClick(user)}
+                    onPress={() => handleCardClick(frontCard)}
+                    style={styles.cardContent}
                   >
-                    <Text style={styles.name}>
-                      {user.firstName} {user.lastName}
-                    </Text>
-                    <Text style={styles.text}>Age: {user.age}</Text>
-                  </TouchableOpacity>
-                </LinearGradient>
+                    <LinearGradient
+                      colors={['transparent', 'black']}
+                      style={{ width: '100%' }}
+                    >
+                      <TouchableOpacity
+                        style={{
+                          width: '100%',
+                          padding: 20,
+                          alignItems: 'flex-start',
+                          marginTop: 40,
+                        }}
+                        onPress={() => handleCardClick(frontCard)}
+                      >
+                        <Text style={styles.name}>
+                          {frontCard.firstName} {frontCard.lastName}
+                        </Text>
+                        <Text style={styles.text}>Age: {frontCard.age}</Text>
+                      </TouchableOpacity>
+                    </LinearGradient>
 
-                <View style={{ position: 'absolute', right: 15, bottom: 50 }}>
-                  <TouchableOpacity
-                    onPress={handleLike}
-                    style={{
-                      width: 50,
-                      height: 50,
-                      borderWidth: 2,
-                      borderRadius: 100,
-                      borderColor: 'white',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      marginBottom: 20,
-                    }}
-                  >
-                    <Ionicons name="heart" size={30} color={'white'} />
-                  </TouchableOpacity>
+                    <View
+                      style={{ position: 'absolute', right: 15, bottom: 50 }}
+                    >
+                      <TouchableOpacity
+                        onPress={handleLike}
+                        style={styles.actionButton}
+                      >
+                        <Ionicons
+                          name="heart-outline"
+                          size={30}
+                          color={'white'}
+                        />
+                      </TouchableOpacity>
 
-                  <TouchableOpacity
-                    onPress={handleDislike}
-                    style={{
-                      width: 50,
-                      height: 50,
-                      borderWidth: 2,
-                      borderRadius: 100,
-                      borderColor: 'white',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <FontAwesome name="close" size={30} color={'white'} />
+                      <TouchableOpacity
+                        onPress={handleDislike}
+                        style={[styles.actionButton, { marginTop: 20 }]}
+                      >
+                        <Ionicons name="close" size={30} color={'white'} />
+                      </TouchableOpacity>
+                    </View>
                   </TouchableOpacity>
-                </View>
-              </View>
-            </ImageBackground>
+                </ImageBackground>
+              )}
+            </>
           );
-        })}
+        })()}
       </View>
     </SafeAreaView>
   );
@@ -171,7 +198,7 @@ const Home = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: 'white',
     paddingHorizontal: 20,
   },
   logo: {
@@ -183,15 +210,15 @@ const styles = StyleSheet.create({
   cardStack: {
     position: 'relative',
     width: width - 40,
-    height: '90%',
+    height: '80%',
     justifyContent: 'center',
     alignItems: 'center',
     alignSelf: 'center',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
+    shadowOpacity: 0.6,
+    shadowRadius: 20,
     elevation: 10, // For Android shadow
-    shadowColor: '#800080',
+    shadowColor: '#343434ff',
   },
   card: {
     width: '100%',
@@ -251,14 +278,24 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 10,
     width: '100%',
-    height:'100%',
+    height: '100%',
     alignItems: 'center',
-    justifyContent:"center"
+    justifyContent: 'center',
   },
   modalText: {
     fontSize: 24,
     fontWeight: 'bold',
     color: 'black',
+  },
+  actionButton: {
+    width: 60,
+    height: 60,
+    borderWidth: 2,
+    borderRadius: 100,
+    borderColor: '#ffffff8d',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ffffff2b',
   },
 });
 

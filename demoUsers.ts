@@ -1,4 +1,68 @@
-export const demoData = [
+export interface User {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  gender: 'Male' | 'Female' | 'Non-binary' | 'Prefer not to say';
+  age: number;
+  dateOfBirth: string;
+  profilePicture: string;
+  additionalPhotos: string[];
+  about: string;
+  description: string;
+  interests: string[];
+  strengths: string[];
+  occupation: string;
+  education: string;
+  height: string;
+  bodyType: string;
+  smokingStatus: string;
+  drinkingStatus: string;
+  religion: string;
+  politicalViews: string;
+  languages: string[];
+  whatAmILookingFor: {
+    relationshipType: string;
+    personality: string[];
+    activities: string[];
+    qualities: string[];
+    communicationStyle: string;
+    physicalAttraction: string;
+  };
+  location: {
+    city: string;
+    state: string;
+    country: string;
+    latitude: number;
+    longitude: number;
+  };
+  socialMediaLinks: {
+    instagram?: string;
+    facebook?: string;
+    linkedin?: string;
+    twitter?: string;
+  };
+  preferences: {
+    ageRange: { min: number; max: number };
+    gender: string;
+    distance: number;
+  };
+  isVerified: boolean;
+  isEmailVerified: boolean;
+  isPhoneVerified: boolean;
+  profileCompleteness: number;
+  likes: number;
+  dislikes: number;
+  matches: number;
+  views: number;
+  lastOnline: string;
+  joinedDate: string;
+  accountStatus: 'Active' | 'Inactive' | 'Suspended';
+  subscription: 'Basic' | 'Premium' | 'VIP';
+}
+
+export const demoUsers: User[] = [
   {
     id: '1',
     firstName: 'John',
@@ -326,4 +390,72 @@ export const demoData = [
     accountStatus: 'Active',
     subscription: 'VIP',
   },
+  {
+    id: '6',
+    firstName: 'Sophia',
+    lastName: 'Martinez',
+    email: 'sophia.martinez@example.com',
+    phone: '+1-555-0987',
+    gender: 'Female',
+    age: 29,
+    dateOfBirth: '1995-12-18',
+    profilePicture: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1',
+    additionalPhotos: [
+      'https://images.unsplash.com/photo-1531123897727-8f129e1688ce',
+      'https://images.unsplash.com/photo-1544005313-94ddf0286df2',
+      'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e',
+    ],
+    about: 'Doctor by profession, dancer by passion. Love helping people and expressing myself through movement! 💃🩺',
+    description: 'Dedicated healthcare professional who believes in balance between work and personal life. Love salsa dancing and traveling.',
+    interests: ['Dancing', 'Medicine', 'Traveling', 'Reading', 'Cooking', 'Volunteering'],
+    strengths: ['Compassionate', 'Dedicated', 'Energetic', 'Intelligent'],
+    occupation: 'Pediatric Doctor',
+    education: 'Medicine, Harvard Medical School',
+    height: '5ft 5in',
+    bodyType: 'Fit',
+    smokingStatus: 'Non-smoker',
+    drinkingStatus: 'Social drinker',
+    religion: 'Catholic',
+    politicalViews: 'Moderate',
+    languages: ['English', 'Spanish', 'Portuguese'],
+    whatAmILookingFor: {
+      relationshipType: 'Serious Relationship',
+      personality: ['Intelligent', 'Kind', 'Ambitious', 'Family-oriented'],
+      activities: ['Dancing', 'Traveling', 'Fine dining', 'Cultural events'],
+      qualities: ['Honesty', 'Ambition', 'Compassion', 'Sense of humor'],
+      communicationStyle: 'Open, honest, and supportive communication.',
+      physicalAttraction: 'Someone who takes care of themselves and values health.',
+    },
+    location: {
+      city: 'Miami',
+      state: 'FL',
+      country: 'USA',
+      latitude: 25.7617,
+      longitude: -80.1918,
+    },
+    socialMediaLinks: { 
+      instagram: 'https://instagram.com/sophiamartinez',
+      linkedin: 'https://linkedin.com/in/sophiamartinez',
+    },
+    preferences: {
+      ageRange: { min: 28, max: 40 },
+      gender: 'Male',
+      distance: 45,
+    },
+    isVerified: true,
+    isEmailVerified: true,
+    isPhoneVerified: true,
+    profileCompleteness: 96,
+    likes: 89,
+    dislikes: 2,
+    matches: 22,
+    views: 278,
+    lastOnline: '2025-10-18T19:45:00Z',
+    joinedDate: '2025-05-12T08:30:00Z',
+    accountStatus: 'Active',
+    subscription: 'Premium',
+  },
 ];
+
+// For backward compatibility with existing code
+export const demoData = demoUsers;

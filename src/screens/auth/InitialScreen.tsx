@@ -44,14 +44,16 @@ const InitialScreen = () => {
           { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
         ]}
       >
-        <Image
-          source={require('../../../assets/logo.png')}
-          style={styles.logo}
-        />
+        <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+          <Image
+            source={require('../../../assets/logo.png')}
+            style={styles.logo}
+          />
 
-        {/* Title */}
-        <Text style={styles.title}>Truffle</Text>
-        <Text style={styles.subtitle}>Now no more endless swiping</Text>
+          {/* Title */}
+          <Text style={styles.title}>Truffle</Text>
+          <Text style={styles.subtitle}>Now no more endless swiping</Text>
+        </View>
 
         {/* Buttons */}
         <View style={styles.buttonContainer}>
@@ -88,13 +90,14 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
+    paddingTop:100,
+    paddingBottom:40
   },
   logo: {
     width: 80,
     height: 80,
-    marginBottom: 20,
     resizeMode: 'contain',
   },
   title: {
@@ -116,7 +119,7 @@ const styles = StyleSheet.create({
   },
   button: {
     width: '100%',
-    paddingVertical: 14,
+    paddingVertical: 10,
     borderRadius: 30,
     alignItems: 'center',
   },

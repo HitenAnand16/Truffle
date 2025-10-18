@@ -86,17 +86,17 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '500',
-    marginBottom: 8,
+    marginBottom: 15,
     color: '#333',
   },
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 8,
-    padding: 10,
+    padding: 15,
     backgroundColor: '#fff',
     width: '100%',
-    marginBottom: 15,
+    marginBottom: 18,
   },
   textArea: {
     height: 100,

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -14,7 +14,7 @@ import axios from 'axios';
 const EmailVerificationScreen = ({ navigation, route }) => {
   const { name, age, gender } = route.params;
   const [email, setEmail] = useState('');
-  const [otp, setOtp] = useState('');
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [otpId, setOtpId] = useState(null);
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [phone, setPhone] = useState('');
@@ -25,8 +25,8 @@ const EmailVerificationScreen = ({ navigation, route }) => {
   const [isPhoneVerifying, setIsPhoneVerifying] = useState(false);
   const [isPhoneOtpSent, setIsPhoneOtpSent] = useState(false);
 
-
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const otpRefs = useRef([]);
 
   // Handle email OTP submission
   const handleEmailSubmit = async () => {
@@ -91,31 +91,33 @@ const EmailVerificationScreen = ({ navigation, route }) => {
 
   // Handle OTP verification for both email and phone
   const handleOtpSubmit = async type => {
-    // if (type === 'email' && otp === '123456') {
-    //   // Replace with actual OTP verification logic
-    //   setIsEmailVerified(true);
-    //   setOtp('');
-    //   setIsVerifying(false);
-    //   setModalVisible(false);
-    //   if (!isPhoneVerified) {
-    //     return;
-    //   }
-    //   navigation.navigate('NextScreen');
-    // } else if (type === 'phone' && otp === '654321') {
-    //   // Replace with actual OTP verification logic
-    //   setIsPhoneVerified(true);
-    //   setOtp('');
-    //   setIsPhoneVerifying(false);
-    //   setModalVisible(false);
-    //   if (isEmailVerified) {
-    //     navigation.navigate('NextScreen');
-    //   }
-    // } else {
-    //   alert('Invalid OTP');
-    // }
+    const otpString = otp.join(''); // Combine the OTP array into a string
+
+    if (type === 'email' && otpString === '123456') {
+      // Replace with actual OTP verification logic
+      setIsEmailVerified(true);
+      setOtp(['', '', '', '', '', '']); // Reset OTP fields
+      setIsVerifying(false);
+      setModalVisible(false);
+      if (!isPhoneVerified) {
+        return;
+      }
+      navigation.navigate('NextScreen');
+    } else if (type === 'phone' && otpString === '654321') {
+      // Replace with actual OTP verification logic
+      setIsPhoneVerified(true);
+      setOtp(['', '', '', '', '', '']); // Reset OTP fields
+      setIsPhoneVerifying(false);
+      setModalVisible(false);
+      if (isEmailVerified) {
+        navigation.navigate('NextScreen');
+      }
+    } else {
+      alert('Invalid OTP');
+    }
 
     try {
-      const otpPayload = { otp, otpId };
+      const otpPayload = { otp: otpString, otpId }; // Use the joined OTP string here
       if (type === 'email') {
         const emailVerifyResponse = await axios.post(
           'https://truffle-0ol8.onrender.com/api/invite/verify/email/OTP',
@@ -147,6 +149,17 @@ const EmailVerificationScreen = ({ navigation, route }) => {
     }
   };
 
+  const handleOtpChange = (index, value) => {
+    let otpCopy = [...otp];
+    otpCopy[index] = value.slice(0, 1); // Ensure only one character per box
+    setOtp(otpCopy);
+
+    // Move to the next box if the current input is not empty
+    if (value && index < otp.length - 1) {
+      otpRefs.current[index + 1].focus();
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -166,14 +179,15 @@ const EmailVerificationScreen = ({ navigation, route }) => {
               Email<Text style={styles.required}> *</Text>
             </Text>
             {!isEmailVerified ? (
-              <View>
+              <View style={{flex:1}}>
                 <TextInput
                   style={styles.textInput}
                   placeholder="example@gmail.com"
                   value={email}
                   onChangeText={setEmail}
                 />
-                {isOtpSent && !isEmailVerified ? (
+                <View style={{position:"absolute", bottom:0, alignSelf:"center"}}>
+                  {isOtpSent && !isEmailVerified ? (
                   <TouchableOpacity
                     style={[styles.btn, styles.filled]}
                     onPress={handleEmailSubmit}
@@ -188,6 +202,7 @@ const EmailVerificationScreen = ({ navigation, route }) => {
                     <Text style={styles.filledText}>Send OTP</Text>
                   </TouchableOpacity>
                 )}
+                </View>
               </View>
             ) : (
               <View style={styles.row}>
@@ -197,7 +212,7 @@ const EmailVerificationScreen = ({ navigation, route }) => {
                   onChangeText={setEmail}
                   editable={false}
                 />
-                <Text style={styles.verifiedText}>Verified</Text>
+                <Ionicons name="checkmark-circle" color={'green'} size={22} />
               </View>
             )}
           </>
@@ -209,7 +224,7 @@ const EmailVerificationScreen = ({ navigation, route }) => {
           )}
 
           {isEmailVerified && !isPhoneVerified && (
-            <>
+            <View style={{flex:1}}>
               <TextInput
                 style={styles.textInput}
                 placeholder="Enter phone number"
@@ -217,7 +232,8 @@ const EmailVerificationScreen = ({ navigation, route }) => {
                 onChangeText={setPhone}
                 keyboardType="numeric"
               />
-              {isPhoneOtpSent && !isPhoneVerified ? (
+              <View style={{position:"absolute", bottom:0, alignSelf:"center"}}>
+                {isPhoneOtpSent && !isPhoneVerified ? (
                 <TouchableOpacity
                   style={[styles.btn, styles.filled]}
                   onPress={handlePhoneSubmit}
@@ -232,7 +248,8 @@ const EmailVerificationScreen = ({ navigation, route }) => {
                   <Text style={styles.filledText}>Send OTP</Text>
                 </TouchableOpacity>
               )}
-            </>
+              </View>
+            </View>
           )}
 
           {isPhoneVerified && (
@@ -243,7 +260,7 @@ const EmailVerificationScreen = ({ navigation, route }) => {
                 onChangeText={setPhone}
                 editable={false}
               />
-              <Text style={styles.verifiedText}>Verified</Text>
+              <Ionicons name="checkmark-circle" color={'green'} size={22} />
             </View>
           )}
         </View>
@@ -280,14 +297,20 @@ const EmailVerificationScreen = ({ navigation, route }) => {
               {isPhoneOtpSent ? 'phone' : 'email'}.
             </Text>
 
-            <TextInput
-              style={styles.textInput}
-              placeholder="Enter OTP"
-              value={otp}
-              onChangeText={setOtp}
-              keyboardType="numeric"
-              maxLength={6}
-            />
+            <View style={styles.otpContainer}>
+              {otp.map((digit, index) => (
+                <TextInput
+                  key={index}
+                  ref={el => (otpRefs.current[index] = el)}
+                  style={styles.otpInput}
+                  value={digit}
+                  onChangeText={value => handleOtpChange(index, value)}
+                  keyboardType="numeric"
+                  maxLength={1}
+                  textAlign="center"
+                />
+              ))}
+            </View>
 
             <TouchableOpacity
               style={[styles.btn, styles.filled]}
@@ -311,7 +334,7 @@ const EmailVerificationScreen = ({ navigation, route }) => {
               style={[styles.btn, styles.cancelBtn]}
               onPress={() => setModalVisible(false)}
             >
-              <Text style={styles.cancelText}>Cancel</Text>
+              <Text style={styles.cancelText}>Resend OTP</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -333,11 +356,11 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   card: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     paddingVertical: 20,
     elevation: 3,
     width: '100%',
+    height: '85%',
   },
   textInput: {
     borderWidth: 1,
@@ -354,6 +377,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginHorizontal: 5,
     paddingHorizontal: 70,
+    alignSelf: 'center',
   },
   filled: { backgroundColor: '#4F0D50' },
   filledText: { color: '#fff', fontWeight: '600' },
@@ -424,7 +448,7 @@ const styles = StyleSheet.create({
   },
   cancelText: {
     color: '#333',
-    fontSize: 16,
+    fontSize: 13,
   },
   loadingContainer: {
     flexDirection: 'row',
@@ -443,6 +467,21 @@ const styles = StyleSheet.create({
     bottom: 0,
     alignSelf: 'center',
     marginBottom: 20,
+  },
+  otpContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 25,
+  },
+  otpInput: {
+    borderBottomWidth: 1,
+    borderColor: '#ccc',
+    padding: 10,
+    width: 50,
+    height: 50,
+    borderRadius: 5,
+    fontSize: 20,
+    textAlign: 'center',
   },
 });
 
