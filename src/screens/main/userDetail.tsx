@@ -8,6 +8,7 @@ import {
   Modal,
   Animated,
   ScrollView,
+  ImageBackground,
 } from 'react-native';
 import { OptimizedImageBackground } from '../../components/OptimizedImage';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -129,49 +130,10 @@ const UserDetails = ({ route, navigation }: any) => {
       {/* Header Info */}
       <View style={styles.modalHeader}>
         <Text style={styles.modalName}>
-          {user.firstName} {user.lastName}
+          {user.firstName}, {user.age}
         </Text>
-        <Text style={styles.modalAge}>{user.age} years </Text>
-        <View style={styles.modalBadges}>
-          {user.isVerified && (
-            <View style={styles.verifiedBadge}>
-              <Ionicons name="checkmark-circle" size={16} color="#4CAF50" />
-              <Text style={styles.verifiedText}>Verified</Text>
-            </View>
-          )}
-          {user.subscription && (
-            <View style={styles.subscriptionBadge}>
-              <Text style={styles.subscriptionText}>{user.subscription}</Text>
-            </View>
-          )}
-        </View>
+        <Text style={styles.modalAge}> {user.location.city} </Text>
       </View>
-
-      {/* Stats */}
-      {user.likes !== undefined &&
-        renderSection(
-          'Profile Stats',
-          <View style={styles.statsContainer}>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{user.likes || 0}</Text>
-              <Text style={styles.statLabel}>Likes</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{user.matches || 0}</Text>
-              <Text style={styles.statLabel}>Matches</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{user.views || 0}</Text>
-              <Text style={styles.statLabel}>Views</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>
-                {user.profileCompleteness || 0}%
-              </Text>
-              <Text style={styles.statLabel}>Complete</Text>
-            </View>
-          </View>,
-        )}
 
       {/* About */}
       {user.about &&
@@ -494,23 +456,24 @@ const UserDetails = ({ route, navigation }: any) => {
           visible={modalVisible}
           animationType="slide"
           transparent={true}
+          statusBarTranslucent={true}
           onRequestClose={() => setModalVisible(false)}
         >
           <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              {/* Modal Header with Close Button */}
-              <View style={styles.modalHeaderBar}>
-                <View style={styles.modalHandle} />
-                <TouchableOpacity
-                  style={styles.closeButton}
-                  onPress={() => setModalVisible(false)}
-                >
-                  <Ionicons name="close" size={24} color="#666" />
-                </TouchableOpacity>
-              </View>
-
+            <ImageBackground
+              source={{ uri: allImages[0] }}
+              style={styles.modalContent}
+              resizeMode="cover"
+              blurRadius={8}
+            >
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setModalVisible(false)}
+              >
+                <Ionicons name="chevron-back" size={24} color="#fff" />
+              </TouchableOpacity>
               {renderModalContent()}
-            </View>
+            </ImageBackground>
           </View>
         </Modal>
       </OptimizedImageBackground>
@@ -608,20 +571,19 @@ const styles = StyleSheet.create({
     bottom: 10,
     left: 0,
     right: 0,
-    height: "80%",
+    height: '80%',
     // backgroundColor:"red"
   },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
+    paddingTop: 0,
   },
   modalContent: {
     backgroundColor: 'white',
-    borderTopLeftRadius: 25,
-    borderTopRightRadius: 25,
-    maxHeight: height * 0.85,
-    minHeight: height * 0.5,
+    height: height,
+    paddingTop: 50,
   },
   modalHeaderBar: {
     flexDirection: 'row',
@@ -640,30 +602,31 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   closeButton: {
-    padding: 8,
     borderRadius: 20,
-    backgroundColor: '#f8f9fa',
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 25,
+    marginBottom: 10,
   },
   modalScrollView: {
     flex: 1,
     paddingHorizontal: 20,
   },
   modalHeader: {
-    alignItems: 'center',
     paddingVertical: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
   modalName: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#fff',
     marginBottom: 5,
   },
   modalAge: {
-    fontSize: 18,
-    color: '#666',
-    marginBottom: 10,
+    fontSize: 16,
+    color: '#fff',
+    marginBottom: 15,
   },
   modalBadges: {
     flexDirection: 'row',
@@ -696,21 +659,17 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   section: {
-    backgroundColor: 'white',
-    borderRadius: 12,
+    backgroundColor: '#0000006d',
+    borderRadius: 32,
     padding: 16,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#fff',
     marginBottom: 12,
+    textAlign: 'center',
   },
   subsectionTitle: {
     fontSize: 16,
@@ -741,12 +700,12 @@ const styles = StyleSheet.create({
   },
   aboutText: {
     fontSize: 16,
-    color: '#333',
+    color: '#fff',
     lineHeight: 24,
   },
   descriptionText: {
     fontSize: 16,
-    color: '#666',
+    color: '#fff',
     lineHeight: 24,
   },
   infoItem: {
@@ -758,13 +717,13 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 16,
-    color: '#666',
+    color: '#fff',
     fontWeight: '500',
     flex: 1,
   },
   infoValue: {
     fontSize: 16,
-    color: '#333',
+    color: '#fff',
     flex: 2,
     textAlign: 'right',
   },

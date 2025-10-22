@@ -94,10 +94,24 @@ const Home = ({ navigation }: any) => {
           }}
         >
           <TouchableOpacity>
-            <Octicons name={'undo'} size={30} color={'gray'} />
+            <Image
+              style={{
+                width: 24,
+                height: 24,
+                resizeMode: 'contain',
+              }}
+              source={require('../../../assets/home/back.png')}
+            />
           </TouchableOpacity>
           <TouchableOpacity>
-            <Ionicons name={'filter'} size={30} color={'gray'} />
+            <Image
+              style={{
+                width: 24,
+                height: 24,
+                resizeMode: 'contain',
+              }}
+              source={require('../../../assets/home/filter.png')}
+            />
           </TouchableOpacity>
         </View>
       </View>
@@ -115,9 +129,7 @@ const Home = ({ navigation }: any) => {
           </View>
         </View>
       </Modal>
-
-      {/* Card Stack */}
-      {/* Card Stack */}
+      
       <View style={styles.cardStack}>
         {(() => {
           // Show message if no available users
