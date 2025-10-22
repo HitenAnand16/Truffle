@@ -1,16 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Dimensions,
-  ImageBackground,
   TouchableOpacity,
   Modal,
   Animated,
   ScrollView,
 } from 'react-native';
+import { OptimizedImageBackground } from '../../components/OptimizedImage';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import SimpleLineIcons from 'react-native-vector-icons/SimpleLineIcons';
+import Entypo from 'react-native-vector-icons/Entypo';
 import {
   PanGestureHandler,
   GestureHandlerRootView,
@@ -64,18 +66,18 @@ const UserDetails = ({ route, navigation }: any) => {
   };
 
   // Navigate through images
-  const nextImage = () => {
+  const nextImage = useCallback(() => {
     setCurrentImageIndex(prev => (prev + 1) % allImages.length);
-  };
+  }, [allImages.length]);
 
-  const prevImage = () => {
+  const prevImage = useCallback(() => {
     setCurrentImageIndex(
       prev => (prev - 1 + allImages.length) % allImages.length,
     );
-  };
+  }, [allImages.length]);
 
   // Handle like and dislike actions
-  const handleLike = () => {
+  const handleLike = useCallback(() => {
     addLikedUser(user.id); // Add to context
     setActionMessage('Liked!');
     setIsActionModalVisible(true);
@@ -83,9 +85,9 @@ const UserDetails = ({ route, navigation }: any) => {
       setIsActionModalVisible(false);
       navigation.goBack(); // Go back to home screen after like
     }, 1500);
-  };
+  }, [addLikedUser, user.id, navigation]);
 
-  const handleDislike = () => {
+  const handleDislike = useCallback(() => {
     addDislikedUser(user.id); // Add to context
     setActionMessage('Disliked!');
     setIsActionModalVisible(true);
@@ -93,7 +95,7 @@ const UserDetails = ({ route, navigation }: any) => {
       setIsActionModalVisible(false);
       navigation.goBack(); // Go back to home screen after dislike
     }, 1500);
-  };
+  }, [addDislikedUser, user.id, navigation]);
 
   const renderSection = (title: string, content: React.ReactNode) => (
     <View style={styles.section}>
@@ -112,7 +114,7 @@ const UserDetails = ({ route, navigation }: any) => {
   const renderTags = (items: string[]) => (
     <View style={styles.tagsContainer}>
       {items.map((item, index) => (
-        <View key={index} style={styles.tag}>
+        <View style={styles.tag} key={`tag-${index}`} {...({} as any)}>
           <Text style={styles.tagText}>{item}</Text>
         </View>
       ))}
@@ -129,7 +131,7 @@ const UserDetails = ({ route, navigation }: any) => {
         <Text style={styles.modalName}>
           {user.firstName} {user.lastName}
         </Text>
-        <Text style={styles.modalAge}>{user.age} years old</Text>
+        <Text style={styles.modalAge}>{user.age} years </Text>
         <View style={styles.modalBadges}>
           {user.isVerified && (
             <View style={styles.verifiedBadge}>
@@ -360,7 +362,7 @@ const UserDetails = ({ route, navigation }: any) => {
 
   return (
     <GestureHandlerRootView style={styles.container}>
-      <ImageBackground
+      <OptimizedImageBackground
         source={{ uri: allImages[currentImageIndex] }}
         style={styles.backgroundImage}
         resizeMode="cover"
@@ -376,15 +378,18 @@ const UserDetails = ({ route, navigation }: any) => {
         {/* Image navigation dots */}
         {allImages.length > 1 && (
           <View style={styles.imageIndicators}>
-            {allImages.map((_, index) => (
-              <View
-                key={index}
-                style={[
-                  styles.indicator,
-                  index === currentImageIndex && styles.activeIndicator,
-                ]}
-              />
-            ))}
+            {allImages.map((_, index) => {
+              const ViewComponent = View as any;
+              return (
+                <ViewComponent
+                  key={`indicator-${index}`}
+                  style={[
+                    styles.indicator,
+                    index === currentImageIndex && styles.activeIndicator,
+                  ]}
+                />
+              );
+            })}
           </View>
         )}
 
@@ -402,22 +407,60 @@ const UserDetails = ({ route, navigation }: any) => {
           style={styles.basicInfoOverlay}
         >
           <Text style={styles.overlayName}>
-            {user.firstName} {user.lastName}
+            {user.firstName} {user.age}
           </Text>
-          <Text style={styles.overlayAge}>{user.age} years old</Text>
-          <Text style={styles.swipeUpHint}>Swipe up for more details</Text>
+          <Text style={styles.overlayAge}>{user.location.city}</Text>
+
+          <View
+            style={{
+              backgroundColor: '#ffffff39',
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: 5,
+              borderRadius: 100,
+              alignSelf: 'center',
+              marginTop: 10,
+              width: '60%',
+              paddingHorizontal: 20,
+              paddingVertical: 15,
+            }}
+          >
+            <TouchableOpacity
+              onPress={handleDislike}
+              style={{
+                width: 40,
+                height: 40,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <SimpleLineIcons name="dislike" size={22} color={'white'} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{
+                width: 40,
+                height: 40,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              onPress={handleLike}
+            >
+              <Ionicons name="heart-outline" size={30} color={'white'} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{
+                width: 40,
+                height: 40,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              onPress={handleLike}
+            >
+              <Entypo name="dots-three-horizontal" size={30} color={'white'} />
+            </TouchableOpacity>
+          </View>
         </LinearGradient>
-
-        {/* Action buttons for like/dislike */}
-        <View style={styles.actionButtonsContainer}>
-          <TouchableOpacity onPress={handleLike} style={styles.actionButton}>
-            <Ionicons name="heart-outline" size={30} color={'white'} />
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={handleDislike} style={[styles.actionButton, { marginTop: 20 }]}>
-            <Ionicons name="close" size={30} color={'white'} />
-          </TouchableOpacity>
-        </View>
 
         {/* Swipe gesture handler */}
         <PanGestureHandler
@@ -470,7 +513,7 @@ const UserDetails = ({ route, navigation }: any) => {
             </View>
           </View>
         </Modal>
-      </ImageBackground>
+      </OptimizedImageBackground>
     </GestureHandlerRootView>
   );
 };
@@ -489,17 +532,17 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     position: 'absolute',
-    top: 60,
+    top: 90,
     left: 10,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1000,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    // backgroundColor: 'rgba(0, 0, 0, 0.3)',
     borderRadius: 25,
   },
   imageIndicators: {
     position: 'absolute',
-    top: 60,
+    top: 70,
     left: 0,
     right: 0,
     flexDirection: 'row',
@@ -507,8 +550,8 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   indicator: {
-    width: 8,
-    height: 8,
+    width: 80,
+    height: 4,
     borderRadius: 4,
     backgroundColor: 'rgba(255, 255, 255, 0.5)',
     marginHorizontal: 4,
@@ -538,14 +581,15 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     borderRadius: 15,
-    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingBottom: 30,
+    paddingTop: 10,
   },
   overlayName: {
     fontSize: 28,
     fontWeight: 'bold',
     color: 'white',
     marginBottom: 5,
-    textAlign: 'center',
     paddingTop: 120,
   },
   overlayAge: {
@@ -557,14 +601,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.7)',
     textAlign: 'center',
-    marginBottom:20
+    marginBottom: 20,
   },
   gestureArea: {
     position: 'absolute',
     bottom: 10,
     left: 0,
     right: 0,
-    height: 500,
+    height: "80%",
     // backgroundColor:"red"
   },
   modalOverlay: {

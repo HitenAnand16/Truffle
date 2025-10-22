@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,9 +6,12 @@ import {
   Modal,
   StyleSheet,
   Dimensions,
-  ImageBackground,
   Image,
 } from 'react-native';
+import {
+  OptimizedImage,
+  OptimizedImageBackground,
+} from '../../components/OptimizedImage';
 import { demoData } from '../../../demoData'; // Importing demo data
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -30,8 +33,8 @@ const Home = ({ navigation }: any) => {
     return demoData.filter(user => !isUserActioned(user.id));
   }, [isUserActioned]);
 
-  const handleLike = () => {
-    if (availableUsers.length > 0) {
+  const handleLike = useCallback(() => {
+    if (currentIndex < availableUsers.length) {
       const currentUser = availableUsers[currentIndex];
       addLikedUser(currentUser.id);
       setActionMessage('Liked!'); // Set message for like
@@ -44,10 +47,10 @@ const Home = ({ navigation }: any) => {
         }
       }, 2000);
     }
-  };
+  }, [currentIndex, availableUsers, addLikedUser]);
 
-  const handleDislike = () => {
-    if (availableUsers.length > 0) {
+  const handleDislike = useCallback(() => {
+    if (currentIndex < availableUsers.length) {
       const currentUser = availableUsers[currentIndex];
       addDislikedUser(currentUser.id);
       setActionMessage('Disliked!'); // Set message for dislike
@@ -60,12 +63,15 @@ const Home = ({ navigation }: any) => {
         }
       }, 2000);
     }
-  };
+  }, [currentIndex, availableUsers, addDislikedUser]);
 
-  const handleCardClick = (user: any) => {
-    // Navigate to UserDetails screen and pass user data as params
-    navigation.navigate('userDetail', { user });
-  };
+  const handleCardClick = useCallback(
+    (user: any) => {
+      // Navigate to UserDetails screen and pass user data as params
+      navigation.navigate('userDetail', { user });
+    },
+    [navigation],
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -76,7 +82,7 @@ const Home = ({ navigation }: any) => {
           alignItems: 'center',
         }}
       >
-        <Image
+        <OptimizedImage
           source={require('../../../assets/logo.png')}
           style={styles.logo}
         />
@@ -123,14 +129,16 @@ const Home = ({ navigation }: any) => {
             );
           }
 
-          const frontCard = availableUsers[currentIndex % availableUsers.length];
-          const nextCard = availableUsers[(currentIndex + 1) % availableUsers.length]; // wrap-around next card
+          const frontCard =
+            availableUsers[currentIndex % availableUsers.length];
+          const nextCard =
+            availableUsers[(currentIndex + 1) % availableUsers.length]; // wrap-around next card
 
           return (
             <>
               {/* Back / Upcoming Card (slightly visible) */}
               {nextCard && availableUsers.length > 1 && (
-                <ImageBackground
+                <OptimizedImageBackground
                   source={{ uri: nextCard.profilePicture }}
                   style={[
                     styles.card,
@@ -156,12 +164,12 @@ const Home = ({ navigation }: any) => {
                       {nextCard.firstName} {nextCard.lastName}
                     </Text>
                   </LinearGradient>
-                </ImageBackground>
+                </OptimizedImageBackground>
               )}
 
               {/* Front / Active Card (fully visible) */}
               {frontCard && (
-                <ImageBackground
+                <OptimizedImageBackground
                   source={{ uri: frontCard.profilePicture }}
                   style={[
                     styles.card,
@@ -174,7 +182,7 @@ const Home = ({ navigation }: any) => {
                     style={styles.cardContent}
                   >
                     <LinearGradient
-                      colors={['transparent', 'black']}
+                      colors={['transparent', '#00000082']}
                       style={{ width: '100%' }}
                     >
                       <TouchableOpacity
@@ -183,13 +191,16 @@ const Home = ({ navigation }: any) => {
                           padding: 20,
                           alignItems: 'flex-start',
                           marginTop: 40,
+                          marginBottom: 40,
                         }}
                         onPress={() => handleCardClick(frontCard)}
                       >
                         <Text style={styles.name}>
-                          {frontCard.firstName} {frontCard.lastName}
+                          {frontCard.firstName} {frontCard.age}
                         </Text>
-                        <Text style={styles.text}>Age: {frontCard.age}</Text>
+                        <Text style={styles.text}>
+                          {frontCard.location.city}
+                        </Text>
                       </TouchableOpacity>
                     </LinearGradient>
 
@@ -203,7 +214,7 @@ const Home = ({ navigation }: any) => {
                         <Ionicons
                           name="heart-outline"
                           size={30}
-                          color={'white'}
+                          color={'black'}
                         />
                       </TouchableOpacity>
 
@@ -211,11 +222,11 @@ const Home = ({ navigation }: any) => {
                         onPress={handleDislike}
                         style={[styles.actionButton, { marginTop: 20 }]}
                       >
-                        <Ionicons name="close" size={30} color={'white'} />
+                        <Ionicons name="close" size={30} color={'black'} />
                       </TouchableOpacity>
                     </View>
                   </TouchableOpacity>
-                </ImageBackground>
+                </OptimizedImageBackground>
               )}
             </>
           );
@@ -253,7 +264,7 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     height: '100%',
-    borderRadius: 20,
+    borderRadius: 43,
     overflow: 'hidden',
     position: 'absolute',
     top: 0,
@@ -275,7 +286,7 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   text: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#fff',
     textAlign: 'center',
     marginVertical: 2,
@@ -320,12 +331,12 @@ const styles = StyleSheet.create({
   actionButton: {
     width: 60,
     height: 60,
-    borderWidth: 2,
+    // borderWidth: 2,
     borderRadius: 100,
-    borderColor: '#ffffff8d',
+    // borderColor: '#ffffff8d',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#ffffff2b',
+    backgroundColor: '#ffffff3c',
   },
   noUsersContainer: {
     flex: 1,

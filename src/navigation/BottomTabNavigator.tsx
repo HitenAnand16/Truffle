@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Image } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
+import { OptimizedImage } from '../components/OptimizedImage';
 
 // Import screens
 import Home from '../screens/main/home';
@@ -28,7 +28,7 @@ const BottomTabNavigator = () => {
           if (route.name === 'Home') {
             // Use custom logo image for Home tab
             icon = (
-              <Image
+              <OptimizedImage
                 source={require('../../assets/logo.png')}
                 style={{
                   resizeMode: 'cover',
@@ -88,7 +88,7 @@ const BottomTabNavigator = () => {
           shadowRadius: 12,
           height: 70,
           paddingTop: 15,
-          marginBottom: 20,
+          marginBottom: 30,
           marginHorizontal: '7.5%',
           position: 'absolute',
           bottom: 0,

@@ -1,16 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  Image,
   TouchableOpacity,
   Dimensions,
-  ImageBackground,
   Modal,
   Animated,
 } from 'react-native';
+import { OptimizedImage, OptimizedImageBackground } from '../../components/OptimizedImage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { PanGestureHandler, GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -56,13 +55,13 @@ const UserProfileScreen = () => {
   };
 
   // Navigate through images
-  const nextImage = () => {
+  const nextImage = useCallback(() => {
     setCurrentImageIndex((prev) => (prev + 1) % allImages.length);
-  };
+  }, [allImages.length]);
 
-  const prevImage = () => {
+  const prevImage = useCallback(() => {
     setCurrentImageIndex((prev) => (prev - 1 + allImages.length) % allImages.length);
-  };
+  }, [allImages.length]);
   const renderSection = (title: string, content: React.ReactNode) => (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>{title}</Text>
@@ -77,15 +76,20 @@ const UserProfileScreen = () => {
     </View>
   );
 
-  const renderTags = (items: string[]) => (
-    <View style={styles.tagsContainer}>
-      {items.map((item, index) => (
-        <View key={index} style={styles.tag}>
-          <Text style={styles.tagText}>{item}</Text>
-        </View>
-      ))}
-    </View>
-  );
+  const renderTags = (items: string[]) => {
+    return (
+      <View style={styles.tagsContainer}>
+        {items.map((item, index) => {
+          const ViewComponent = View as any;
+          return (
+            <ViewComponent key={index} style={styles.tag}>
+              <Text style={styles.tagText}>{item}</Text>
+            </ViewComponent>
+          );
+        })}
+      </View>
+    );
+  };
 
   const renderModalContent = () => (
     <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
@@ -233,22 +237,25 @@ const UserProfileScreen = () => {
 
   return (
     <GestureHandlerRootView style={styles.container}>
-      <ImageBackground
+      <OptimizedImageBackground
         source={{ uri: allImages[currentImageIndex] }}
         style={styles.backgroundImage}
         resizeMode="cover"
       >
         {/* Image navigation dots */}
         <View style={styles.imageIndicators}>
-          {allImages.map((_, index) => (
-            <View
-              key={index}
-              style={[
-                styles.indicator,
-                index === currentImageIndex && styles.activeIndicator,
-              ]}
-            />
-          ))}
+          {allImages.map((_, index) => {
+            const ViewComponent = View as any;
+            return (
+              <ViewComponent
+                key={index}
+                style={[
+                  styles.indicator,
+                  index === currentImageIndex && styles.activeIndicator,
+                ]}
+              />
+            );
+          })}
         </View>
 
         {/* Left/Right tap areas for image navigation */}
@@ -301,7 +308,7 @@ const UserProfileScreen = () => {
             </View>
           </View>
         </Modal>
-      </ImageBackground>
+      </OptimizedImageBackground>
     </GestureHandlerRootView>
   );
 };
