@@ -733,13 +733,13 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   tag: {
-    backgroundColor: '#4F0D50',
+    backgroundColor: '#ffffffff',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
   },
   tagText: {
-    color: 'white',
+    color: 'black',
     fontSize: 14,
     fontWeight: '500',
   },
