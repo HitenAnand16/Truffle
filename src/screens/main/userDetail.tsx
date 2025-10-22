@@ -11,15 +11,23 @@ import {
   ScrollView,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { PanGestureHandler, GestureHandlerRootView } from 'react-native-gesture-handler';
+import {
+  PanGestureHandler,
+  GestureHandlerRootView,
+} from 'react-native-gesture-handler';
+import LinearGradient from 'react-native-linear-gradient';
+import { useUserActions } from '../../context/UserActionsContext';
 
 const { width, height } = Dimensions.get('window');
 
 const UserDetails = ({ route, navigation }: any) => {
   const { user } = route.params; // Get user data passed via navigation
+  const { addLikedUser, addDislikedUser } = useUserActions();
   const [modalVisible, setModalVisible] = useState(false);
   const [translateY] = useState(new Animated.Value(0));
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isActionModalVisible, setIsActionModalVisible] = useState(false);
+  const [actionMessage, setActionMessage] = useState('');
 
   // All images (profile + additional)
   const allImages = [user.profilePicture, ...(user.additionalPhotos || [])];
@@ -27,18 +35,20 @@ const UserDetails = ({ route, navigation }: any) => {
   // Gesture handler for swipe up/down
   const onGestureEvent = Animated.event(
     [{ nativeEvent: { translationY: translateY } }],
-    { useNativeDriver: true }
+    { useNativeDriver: true },
   );
 
   // Handle gesture state change
   const onHandlerStateChange = ({ nativeEvent }: any) => {
-    if (nativeEvent.translationY < -100) { // Swipe up
+    if (nativeEvent.translationY < -100) {
+      // Swipe up
       setModalVisible(true);
       Animated.spring(translateY, {
         toValue: 0,
         useNativeDriver: true,
       }).start();
-    } else if (nativeEvent.translationY > 100 && modalVisible) { // Swipe down when modal is open
+    } else if (nativeEvent.translationY > 100 && modalVisible) {
+      // Swipe down when modal is open
       setModalVisible(false);
       Animated.spring(translateY, {
         toValue: 0,
@@ -55,11 +65,34 @@ const UserDetails = ({ route, navigation }: any) => {
 
   // Navigate through images
   const nextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % allImages.length);
+    setCurrentImageIndex(prev => (prev + 1) % allImages.length);
   };
 
   const prevImage = () => {
-    setCurrentImageIndex((prev) => (prev - 1 + allImages.length) % allImages.length);
+    setCurrentImageIndex(
+      prev => (prev - 1 + allImages.length) % allImages.length,
+    );
+  };
+
+  // Handle like and dislike actions
+  const handleLike = () => {
+    addLikedUser(user.id); // Add to context
+    setActionMessage('Liked!');
+    setIsActionModalVisible(true);
+    setTimeout(() => {
+      setIsActionModalVisible(false);
+      navigation.goBack(); // Go back to home screen after like
+    }, 1500);
+  };
+
+  const handleDislike = () => {
+    addDislikedUser(user.id); // Add to context
+    setActionMessage('Disliked!');
+    setIsActionModalVisible(true);
+    setTimeout(() => {
+      setIsActionModalVisible(false);
+      navigation.goBack(); // Go back to home screen after dislike
+    }, 1500);
   };
 
   const renderSection = (title: string, content: React.ReactNode) => (
@@ -87,7 +120,10 @@ const UserDetails = ({ route, navigation }: any) => {
   );
 
   const renderModalContent = () => (
-    <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={styles.modalScrollView}
+      showsVerticalScrollIndicator={false}
+    >
       {/* Header Info */}
       <View style={styles.modalHeader}>
         <Text style={styles.modalName}>
@@ -110,137 +146,215 @@ const UserDetails = ({ route, navigation }: any) => {
       </View>
 
       {/* Stats */}
-      {user.likes !== undefined && renderSection('Profile Stats', 
-        <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{user.likes || 0}</Text>
-            <Text style={styles.statLabel}>Likes</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{user.matches || 0}</Text>
-            <Text style={styles.statLabel}>Matches</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{user.views || 0}</Text>
-            <Text style={styles.statLabel}>Views</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{user.profileCompleteness || 0}%</Text>
-            <Text style={styles.statLabel}>Complete</Text>
-          </View>
-        </View>
-      )}
+      {user.likes !== undefined &&
+        renderSection(
+          'Profile Stats',
+          <View style={styles.statsContainer}>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{user.likes || 0}</Text>
+              <Text style={styles.statLabel}>Likes</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{user.matches || 0}</Text>
+              <Text style={styles.statLabel}>Matches</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{user.views || 0}</Text>
+              <Text style={styles.statLabel}>Views</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>
+                {user.profileCompleteness || 0}%
+              </Text>
+              <Text style={styles.statLabel}>Complete</Text>
+            </View>
+          </View>,
+        )}
 
       {/* About */}
-      {user.about && renderSection('About Me', 
-        <Text style={styles.aboutText}>{user.about}</Text>
-      )}
+      {user.about &&
+        renderSection(
+          'About Me',
+          <Text style={styles.aboutText}>{user.about}</Text>,
+        )}
 
       {/* Description */}
-      {user.description && renderSection('Description', 
-        <Text style={styles.descriptionText}>{user.description}</Text>
-      )}
+      {user.description &&
+        renderSection(
+          'Description',
+          <Text style={styles.descriptionText}>{user.description}</Text>,
+        )}
 
       {/* Personal Details */}
-      {renderSection('Personal Details', 
+      {renderSection(
+        'Personal Details',
         <View>
           {user.occupation && renderInfoItem('Occupation', user.occupation)}
           {user.education && renderInfoItem('Education', user.education)}
           {user.height && renderInfoItem('Height', user.height)}
           {user.bodyType && renderInfoItem('Body Type', user.bodyType)}
           {user.smokingStatus && renderInfoItem('Smoking', user.smokingStatus)}
-          {user.drinkingStatus && renderInfoItem('Drinking', user.drinkingStatus)}
+          {user.drinkingStatus &&
+            renderInfoItem('Drinking', user.drinkingStatus)}
           {user.religion && renderInfoItem('Religion', user.religion)}
-          {user.politicalViews && renderInfoItem('Political Views', user.politicalViews)}
-        </View>
+          {user.politicalViews &&
+            renderInfoItem('Political Views', user.politicalViews)}
+        </View>,
       )}
 
       {/* Contact Info */}
-      {renderSection('Contact Information', 
+      {renderSection(
+        'Contact Information',
         <View>
           {user.email && renderInfoItem('Email', user.email)}
           {user.phone && renderInfoItem('Phone', user.phone)}
-          {user.location && renderInfoItem('Location', `${user.location.city || ''}, ${user.location.state || ''}`)}
-        </View>
+          {user.location &&
+            renderInfoItem(
+              'Location',
+              `${user.location.city || ''}, ${user.location.state || ''}`,
+            )}
+        </View>,
       )}
 
       {/* Interests */}
-      {user.interests && user.interests.length > 0 && renderSection('Interests', renderTags(user.interests))}
+      {user.interests &&
+        user.interests.length > 0 &&
+        renderSection('Interests', renderTags(user.interests))}
 
       {/* Strengths */}
-      {user.strengths && user.strengths.length > 0 && renderSection('Strengths', renderTags(user.strengths))}
+      {user.strengths &&
+        user.strengths.length > 0 &&
+        renderSection('Strengths', renderTags(user.strengths))}
 
       {/* Languages */}
-      {user.languages && user.languages.length > 0 && renderSection('Languages', renderTags(user.languages))}
+      {user.languages &&
+        user.languages.length > 0 &&
+        renderSection('Languages', renderTags(user.languages))}
 
       {/* Looking For */}
-      {user.whatAmILookingFor && renderSection('What I\'m Looking For', 
-        <View>
-          {user.whatAmILookingFor.relationshipType && renderInfoItem('Relationship Type', user.whatAmILookingFor.relationshipType)}
-          {user.whatAmILookingFor.communicationStyle && renderInfoItem('Communication Style', user.whatAmILookingFor.communicationStyle)}
-          {user.whatAmILookingFor.physicalAttraction && renderInfoItem('Physical Attraction', user.whatAmILookingFor.physicalAttraction)}
-          {user.whatAmILookingFor.personality && user.whatAmILookingFor.personality.length > 0 && (
-            <>
-              <Text style={styles.subsectionTitle}>Desired Personality Traits:</Text>
-              {renderTags(user.whatAmILookingFor.personality)}
-            </>
-          )}
-          {user.whatAmILookingFor.activities && user.whatAmILookingFor.activities.length > 0 && (
-            <>
-              <Text style={styles.subsectionTitle}>Preferred Activities:</Text>
-              {renderTags(user.whatAmILookingFor.activities)}
-            </>
-          )}
-          {user.whatAmILookingFor.qualities && user.whatAmILookingFor.qualities.length > 0 && (
-            <>
-              <Text style={styles.subsectionTitle}>Important Qualities:</Text>
-              {renderTags(user.whatAmILookingFor.qualities)}
-            </>
-          )}
-        </View>
-      )}
+      {user.whatAmILookingFor &&
+        renderSection(
+          "What I'm Looking For",
+          <View>
+            {user.whatAmILookingFor.relationshipType &&
+              renderInfoItem(
+                'Relationship Type',
+                user.whatAmILookingFor.relationshipType,
+              )}
+            {user.whatAmILookingFor.communicationStyle &&
+              renderInfoItem(
+                'Communication Style',
+                user.whatAmILookingFor.communicationStyle,
+              )}
+            {user.whatAmILookingFor.physicalAttraction &&
+              renderInfoItem(
+                'Physical Attraction',
+                user.whatAmILookingFor.physicalAttraction,
+              )}
+            {user.whatAmILookingFor.personality &&
+              user.whatAmILookingFor.personality.length > 0 && (
+                <>
+                  <Text style={styles.subsectionTitle}>
+                    Desired Personality Traits:
+                  </Text>
+                  {renderTags(user.whatAmILookingFor.personality)}
+                </>
+              )}
+            {user.whatAmILookingFor.activities &&
+              user.whatAmILookingFor.activities.length > 0 && (
+                <>
+                  <Text style={styles.subsectionTitle}>
+                    Preferred Activities:
+                  </Text>
+                  {renderTags(user.whatAmILookingFor.activities)}
+                </>
+              )}
+            {user.whatAmILookingFor.qualities &&
+              user.whatAmILookingFor.qualities.length > 0 && (
+                <>
+                  <Text style={styles.subsectionTitle}>
+                    Important Qualities:
+                  </Text>
+                  {renderTags(user.whatAmILookingFor.qualities)}
+                </>
+              )}
+          </View>,
+        )}
 
       {/* Preferences */}
-      {user.preferences && renderSection('Dating Preferences', 
-        <View style={styles.preferencesContainer}>
-          <Text style={styles.preferenceText}>
-            Looking for {user.preferences.gender || 'anyone'} • 
-            Ages {user.preferences.ageRange?.min || 18}-{user.preferences.ageRange?.max || 99} • 
-            Within {user.preferences.distance || 50} miles
-          </Text>
-        </View>
-      )}
+      {user.preferences &&
+        renderSection(
+          'Dating Preferences',
+          <View style={styles.preferencesContainer}>
+            <Text style={styles.preferenceText}>
+              Looking for {user.preferences.gender || 'anyone'} • Ages{' '}
+              {user.preferences.ageRange?.min || 18}-
+              {user.preferences.ageRange?.max || 99} • Within{' '}
+              {user.preferences.distance || 50} miles
+            </Text>
+          </View>,
+        )}
 
       {/* Social Media */}
-      {user.socialMediaLinks && Object.keys(user.socialMediaLinks).length > 0 && renderSection('Social Media', 
-        <View style={styles.socialContainer}>
-          {Object.entries(user.socialMediaLinks).map(([platform, url]) => (
-            <TouchableOpacity key={platform} style={styles.socialButton}>
-              <Ionicons 
-                name={platform === 'instagram' ? 'logo-instagram' : 
-                      platform === 'facebook' ? 'logo-facebook' :
-                      platform === 'linkedin' ? 'logo-linkedin' : 
-                      platform === 'twitter' ? 'logo-twitter' : 'link-outline'} 
-                size={20} 
-                color="#4F0D50" 
-              />
-              <Text style={styles.socialText}>{platform}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
+      {user.socialMediaLinks &&
+        Object.keys(user.socialMediaLinks).length > 0 &&
+        renderSection(
+          'Social Media',
+          <View style={styles.socialContainer}>
+            {Object.entries(user.socialMediaLinks).map(([platform, url]) => (
+              <TouchableOpacity key={platform} style={styles.socialButton}>
+                <Ionicons
+                  name={
+                    platform === 'instagram'
+                      ? 'logo-instagram'
+                      : platform === 'facebook'
+                      ? 'logo-facebook'
+                      : platform === 'linkedin'
+                      ? 'logo-linkedin'
+                      : platform === 'twitter'
+                      ? 'logo-twitter'
+                      : 'link-outline'
+                  }
+                  size={20}
+                  color="#4F0D50"
+                />
+                <Text style={styles.socialText}>{platform}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>,
+        )}
 
       {/* Account Status */}
-      {(user.accountStatus || user.subscription || user.joinedDate) && renderSection('Account Information', 
-        <View>
-          {user.accountStatus && renderInfoItem('Account Status', user.accountStatus)}
-          {user.subscription && renderInfoItem('Subscription', user.subscription)}
-          {user.joinedDate && renderInfoItem('Joined', new Date(user.joinedDate).toLocaleDateString())}
-          {user.lastOnline && renderInfoItem('Last Online', new Date(user.lastOnline).toLocaleString())}
-          {user.isEmailVerified !== undefined && renderInfoItem('Email Verified', user.isEmailVerified ? 'Yes' : 'No')}
-          {user.isPhoneVerified !== undefined && renderInfoItem('Phone Verified', user.isPhoneVerified ? 'Yes' : 'No')}
-        </View>
-      )}
+      {(user.accountStatus || user.subscription || user.joinedDate) &&
+        renderSection(
+          'Account Information',
+          <View>
+            {user.accountStatus &&
+              renderInfoItem('Account Status', user.accountStatus)}
+            {user.subscription &&
+              renderInfoItem('Subscription', user.subscription)}
+            {user.joinedDate &&
+              renderInfoItem(
+                'Joined',
+                new Date(user.joinedDate).toLocaleDateString(),
+              )}
+            {user.lastOnline &&
+              renderInfoItem(
+                'Last Online',
+                new Date(user.lastOnline).toLocaleString(),
+              )}
+            {user.isEmailVerified !== undefined &&
+              renderInfoItem(
+                'Email Verified',
+                user.isEmailVerified ? 'Yes' : 'No',
+              )}
+            {user.isPhoneVerified !== undefined &&
+              renderInfoItem(
+                'Phone Verified',
+                user.isPhoneVerified ? 'Yes' : 'No',
+              )}
+          </View>,
+        )}
     </ScrollView>
   );
 
@@ -283,26 +397,54 @@ const UserDetails = ({ route, navigation }: any) => {
         )}
 
         {/* Basic info overlay at bottom */}
-        <View style={styles.basicInfoOverlay}>
+        <LinearGradient
+          colors={['transparent', '#000000a8']}
+          style={styles.basicInfoOverlay}
+        >
           <Text style={styles.overlayName}>
             {user.firstName} {user.lastName}
           </Text>
           <Text style={styles.overlayAge}>{user.age} years old</Text>
           <Text style={styles.swipeUpHint}>Swipe up for more details</Text>
+        </LinearGradient>
+
+        {/* Action buttons for like/dislike */}
+        <View style={styles.actionButtonsContainer}>
+          <TouchableOpacity onPress={handleLike} style={styles.actionButton}>
+            <Ionicons name="heart-outline" size={30} color={'white'} />
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={handleDislike} style={[styles.actionButton, { marginTop: 20 }]}>
+            <Ionicons name="close" size={30} color={'white'} />
+          </TouchableOpacity>
         </View>
 
         {/* Swipe gesture handler */}
-        <PanGestureHandler 
-          onGestureEvent={onGestureEvent} 
+        <PanGestureHandler
+          onGestureEvent={onGestureEvent}
           onHandlerStateChange={onHandlerStateChange}
         >
           <Animated.View
             style={[
               styles.gestureArea,
-              { transform: [{ translateY: translateY }] }
+              { transform: [{ translateY: translateY }] },
             ]}
           />
         </PanGestureHandler>
+
+        {/* Action Modal */}
+        <Modal
+          visible={isActionModalVisible}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setIsActionModalVisible(false)}
+        >
+          <View style={styles.actionModalContainer}>
+            <View style={styles.actionModalContent}>
+              <Text style={styles.actionModalText}>{actionMessage}</Text>
+            </View>
+          </View>
+        </Modal>
 
         {/* Detail Modal */}
         <Modal
@@ -323,7 +465,7 @@ const UserDetails = ({ route, navigation }: any) => {
                   <Ionicons name="close" size={24} color="#666" />
                 </TouchableOpacity>
               </View>
-              
+
               {renderModalContent()}
             </View>
           </View>
@@ -372,7 +514,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
   },
   activeIndicator: {
-    backgroundColor: 'white',
+    backgroundColor: '#4F0D50',
   },
   leftTapArea: {
     position: 'absolute',
@@ -392,12 +534,10 @@ const styles = StyleSheet.create({
   },
   basicInfoOverlay: {
     position: 'absolute',
-    bottom: 100,
-    left: 20,
-    right: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    bottom: 0,
+    left: 0,
+    right: 0,
     borderRadius: 15,
-    padding: 20,
     alignItems: 'center',
   },
   overlayName: {
@@ -406,6 +546,7 @@ const styles = StyleSheet.create({
     color: 'white',
     marginBottom: 5,
     textAlign: 'center',
+    paddingTop: 120,
   },
   overlayAge: {
     fontSize: 18,
@@ -416,13 +557,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.7)',
     textAlign: 'center',
+    marginBottom:20
   },
   gestureArea: {
     position: 'absolute',
-    bottom: 0,
+    bottom: 10,
     left: 0,
     right: 0,
-    height: 200,
+    height: 500,
+    // backgroundColor:"red"
   },
   modalOverlay: {
     flex: 1,
@@ -626,6 +769,42 @@ const styles = StyleSheet.create({
     color: '#4F0D50',
     fontWeight: '500',
     textTransform: 'capitalize',
+  },
+  actionButtonsContainer: {
+    position: 'absolute',
+    right: 15,
+    bottom: 120,
+    zIndex: 10,
+  },
+  actionButton: {
+    width: 60,
+    height: 60,
+    borderWidth: 2,
+    borderRadius: 100,
+    borderColor: '#ffffff8d',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ffffff2b',
+  },
+  actionModalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  actionModalContent: {
+    padding: 20,
+    backgroundColor: 'white',
+    borderRadius: 10,
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionModalText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: 'black',
   },
 });
 

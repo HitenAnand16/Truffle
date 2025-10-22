@@ -7,15 +7,23 @@ import {
   ScrollView,
   Image,
   Modal,
+  Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import { launchImageLibrary } from 'react-native-image-picker';
+import { launchImageLibrary} from 'react-native-image-picker';
+import { useRegistration } from '../../../context/RegistrationContext';
+import {
+  generateUniqueTestEmail,
+  generateUniqueTestPhone,
+} from '../../../utils/testCredentials';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-const UploadPicRegisgter = ({ navigation }) => {
+const UploadPicRegisgter = ({ navigation }: { navigation: any }) => {
+  const { registrationData, updateRegistrationData, resetRegistrationData } =
+    useRegistration();
   const [image, setImage] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState(false); // State for modal visibility
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleImageUpload = () => {
     launchImageLibrary(
@@ -23,41 +31,140 @@ const UploadPicRegisgter = ({ navigation }) => {
         mediaType: 'photo',
         maxWidth: 500,
         maxHeight: 500,
-        quality: 1,
+        quality: 0.8,
+        includeBase64: true, // Include base64 data
       },
       response => {
-        try {
-          if (response.didCancel) {
-            console.log('User cancelled image picker');
-            return;
-          }
-          if (response.errorCode) {
-            console.log('ImagePicker Error:', response.errorMessage);
-            return;
-          }
-
-          // ✅ Safely handle undefined assets
-          const asset = response?.assets?.[0];
-          if (asset?.uri) {
+        if (response.didCancel) {
+          console.log('User canceled image picker');
+        } else if (response.errorCode) {
+          console.log('ImagePicker Error: ', response.errorMessage);
+        } else if (response.assets && response.assets[0]) {
+          const asset = response.assets[0];
+          if (asset.uri) {
             setImage(asset.uri);
-          } else {
-            console.warn('No image selected or response missing assets');
-            alert('No valid image selected. Please try again.');
+            // Store the image asset info for FormData upload
+            updateRegistrationData({ picture: asset.uri });
+            console.log('Image uploaded:', {
+              uri: asset.uri,
+              type: asset.type,
+              fileName: asset.fileName,
+              size: asset.fileSize,
+            });
           }
-        } catch (error) {
-          console.error('Image upload error:', error);
         }
       },
     );
   };
 
-  const handleSubmit = () => {
-    // Check if the image is set before showing the modal
-    if (image) {
-      setModalVisible(true); // Show the modal only if an image is uploaded
-    } else {
-      console.log('No image uploaded yet');
-      alert('Please upload an image first!');
+  const handleSubmit = async () => {
+    if (!image) {
+      Alert.alert(
+        'Image Required',
+        'Please upload an image before submitting.',
+      );
+      return;
+    }
+
+    // Validate age
+    const age = parseInt(registrationData.age);
+    if (isNaN(age) || age < 18) {
+      Alert.alert(
+        'Age Validation',
+        'You must be at least 18 years old to register.',
+      );
+      return;
+    }
+
+    // Validate required fields
+    if (
+      !registrationData.name ||
+      !registrationData.email ||
+      !registrationData.phone
+    ) {
+      Alert.alert(
+        'Missing Information',
+        'Please complete all previous steps before submitting.',
+      );
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Generate unique test credentials for API submission
+      const testEmail = generateUniqueTestEmail();
+      const testPhone = generateUniqueTestPhone();
+
+      console.log('Using test credentials:', { testEmail, testPhone });
+
+      // Prepare FormData for file upload (matching Postman format)
+      const formData = new FormData();
+      formData.append('name', registrationData.name.trim());
+      formData.append('age', age.toString());
+      formData.append('sex', registrationData.sex.toLowerCase()); // API expects lowercase
+      formData.append('email', testEmail); // Use unique test email
+      formData.append('phone', testPhone); // Use unique test phone
+      formData.append('instagram', registrationData.instagram.trim());
+      formData.append('occupation', registrationData.occupation.trim());
+      formData.append('description', registrationData.description.trim());
+
+      // Add the image file
+      if (registrationData.picture) {
+        const imageUri = registrationData.picture;
+        const filename = imageUri.split('/').pop() || 'image.jpg';
+        const type = 'image/jpeg'; // Default to jpeg
+
+        formData.append('picture', {
+          uri: imageUri,
+          type: type,
+          name: filename,
+        } as any);
+      }
+
+      console.log('Submitting invitation with FormData:', {
+        name: registrationData.name.trim(),
+        age: age,
+        sex: registrationData.sex.toLowerCase(),
+        email: testEmail,
+        phone: testPhone,
+        instagram: registrationData.instagram.trim(),
+        occupation: registrationData.occupation.trim(),
+        description: registrationData.description.trim(),
+        picture: registrationData.picture ? 'Image file attached' : 'No image',
+      });
+
+      // Make API call to submit the invitation using FormData
+      const response = await fetch(
+        'https://truffle-0ol8.onrender.com/api/invite',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          body: formData,
+        },
+      );
+
+      const result = await response.json();
+      console.log('API Response:', result);
+
+      if (response.ok && (result.success === true || result.status === true)) {
+        // Success - show the modal
+        setModalVisible(true);
+        // Reset registration data after successful submission
+        resetRegistrationData();
+      } else {
+        throw new Error(result.message || 'Failed to submit invitation');
+      }
+    } catch (error) {
+      console.error('Error submitting invitation:', error);
+      Alert.alert(
+        'Submission Failed',
+        'There was an error submitting your invitation. Please try again.',
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -68,7 +175,7 @@ const UploadPicRegisgter = ({ navigation }) => {
           onPress={() => {
             navigation.goBack();
           }}
-          name="caret-back"
+          name="chevron-back"
           size={30}
           color="black"
           style={{ marginLeft: 10 }}
@@ -94,15 +201,15 @@ const UploadPicRegisgter = ({ navigation }) => {
             </>
           )}
         </TouchableOpacity>
-        <Text style={{ marginTop: 20, color: '#6B6B6B' }}>
-          Attach a clear and identifiable photo for smooth verification
-        </Text>
 
         <TouchableOpacity
-          style={styles.nextButton}
-          onPress={handleSubmit} // Trigger the modal visibility
+          style={[styles.nextButton, isSubmitting && styles.disabledButton]}
+          onPress={handleSubmit}
+          disabled={isSubmitting}
         >
-          <Text style={styles.buttonText}>Submit Invite</Text>
+          <Text style={styles.buttonText}>
+            {isSubmitting ? 'Submitting...' : 'Submit Invite'}
+          </Text>
         </TouchableOpacity>
       </ScrollView>
 
@@ -120,96 +227,54 @@ const UploadPicRegisgter = ({ navigation }) => {
                 backgroundColor: 'white',
                 alignItems: 'center',
                 padding: 30,
-                borderRadius: 63,
+                borderRadius: 35,
                 elevation: 5, // For Android shadow
                 shadowColor: '#000', // Shadow color (for iOS)
-                shadowOffset: { width: 0, height: 0 }, // Shadow offset (horizontal, vertical)
-                shadowOpacity: 0.2, // Shadow opacity
-                shadowRadius: 40, // Shadow blur radius
-                height: '70%',
+                shadowOffset: { width: 0, height: 2 }, // Shadow offset (horizontal, vertical)
+                shadowOpacity: 0.1, // Shadow opacity
+                shadowRadius: 10, // Shadow blur radius
               }}
             >
               <Image
                 source={require('../../../../assets/glass.png')} // Use your image here
                 style={styles.modalImage}
               />
-              <Text style={styles.modalText}>Thank you, Riya</Text>
+              <Text style={styles.modalText}>Thank you, {registrationData.name}</Text>
               <Text style={styles.modalSubText}>
                 We’ve received your application and will get back to you as soon
                 as we can.
               </Text>
               <Text style={styles.modalEmailText}>
-                We’ve sent a verification email to riya2@gmail.com. Please check
+                We’ve sent a verification email to {registrationData.email}. Please check
                 your email and click the link to verify.
               </Text>
             </View>
           </View>
           <TouchableOpacity
-            style={{
-              backgroundColor: 'white',
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              width: '80%',
-              padding: 20,
-              borderTopRightRadius: 20,
-              borderTopLeftRadius: 20,
-              marginBottom: 5,
-            }}
+            style={styles.button}
             onPress={() => {
-              navigation.reset({ index: 0, routes: [{ name: 'Initial' }] });
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Initial' }],
+              });
               setModalVisible(false); // Navigate to the main screen
             }}
           >
-            <View
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
-            >
-              <View
-                style={{
-                  backgroundColor: '#EDEDED',
-                  padding: 10,
-                  borderRadius: 8,
-                }}
-              >
-                <FontAwesome size={20} name="user-o" color={'black'} />
-              </View>
-              <Text style={styles.buttonText1}>My Information</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={'black'} />
+            <Text style={styles.buttonText1}>Go Back to Main Screen</Text>
           </TouchableOpacity>
 
+          {/* Track your application button */}
           <TouchableOpacity
-            style={{
-              backgroundColor: 'white',
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              width: '80%',
-              padding: 20,
-              borderBottomRightRadius: 20,
-              borderBottomLeftRadius: 20,
-              marginBottom: 5,
-            }}
+            style={styles.button}
             onPress={() => {
-             navigation.reset({ index: 0, routes: [{ name: 'Track' }] })
-              setModalVisible(false); // Navigate to the main screen
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Track' }],
+              });
+              setModalVisible(false); // Navigate to the track application screen
             }}
           >
-            <View
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
-            >
-              <View
-                style={{
-                  backgroundColor: '#EDEDED',
-                  padding: 10,
-                  borderRadius: 8,
-                }}
-              >
-                <FontAwesome size={20} name="user-o" color={'black'} />
-              </View>
-              <Text style={styles.buttonText1}>My Information</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={'black'} />
+            <Text style={styles.buttonText1}>Track Your Application</Text>
           </TouchableOpacity>
         </View>
       </Modal>
@@ -239,8 +304,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   label: {
-    fontSize: 22,
-    fontWeight: '400',
+    fontSize: 16,
+    fontWeight: '500',
     marginBottom: 8,
     color: '#333',
   },
@@ -305,6 +370,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     width: '100%',
+    // height: '100%',
     justifyContent: 'center',
   },
   modalImage: {
@@ -314,7 +380,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   modalText: {
-    fontSize: 24,
+    fontSize: 25,
     fontWeight: '600',
     color: '#333',
     marginBottom: 10,
@@ -322,11 +388,13 @@ const styles = StyleSheet.create({
   modalSubText: {
     fontSize: 16,
     color: '#333',
-    marginVertical: 40,
+    marginBottom: 10,
     textAlign: 'center',
   },
   modalEmailText: {
-    color: '#6B6B6B',
+    fontSize: 14,
+    color: '#333',
+    marginBottom: 20,
     textAlign: 'center',
   },
   button: {
@@ -339,9 +407,13 @@ const styles = StyleSheet.create({
     width: '80%',
   },
   buttonText1: {
-    color: '#000',
+    color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  disabledButton: {
+    backgroundColor: '#ccc',
+    opacity: 0.6,
   },
 });
 

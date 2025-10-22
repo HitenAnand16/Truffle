@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,15 +6,18 @@ import {
   TouchableOpacity,
   StyleSheet,
   Modal,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
+import { useRegistration } from '../../../context/RegistrationContext';
 
-const EmailVerificationScreen = ({ navigation, route }) => {
+const EmailVerificationScreen = ({ navigation, route }: any) => {
   const { name, age, gender } = route.params;
+  const { updateRegistrationData } = useRegistration();
   const [email, setEmail] = useState('');
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [otp, setOtp] = useState('');
   const [otpId, setOtpId] = useState(null);
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [phone, setPhone] = useState('');
@@ -25,15 +28,19 @@ const EmailVerificationScreen = ({ navigation, route }) => {
   const [isPhoneVerifying, setIsPhoneVerifying] = useState(false);
   const [isPhoneOtpSent, setIsPhoneOtpSent] = useState(false);
 
+
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const otpRefs = useRef([]);
 
   // Handle email OTP submission
   const handleEmailSubmit = async () => {
     if (!emailRegex.test(email)) {
-      alert('Please enter a valid email');
+      Alert.alert('Invalid Email', 'Please enter a valid email');
       return;
     }
+    
+    // Reset previous states
+    setOtpId(null);
+    setOtp('');
     setIsOtpSent(true);
     setModalVisible(true);
     setIsVerifying(true);
@@ -51,20 +58,44 @@ const EmailVerificationScreen = ({ navigation, route }) => {
           },
         },
       );
-      console.log(response.data);
-      setOtpId(response.data.otpId);
-      // Assume OTP is sent successfully, now ask for OTP input
+      console.log('Email OTP response:', response.data);
+      console.log('Response status:', response.data.status);
+      console.log('Response data object:', response.data.data);
+      
+      // Based on your API structure: {status: true, data: {otpId: "..."}, message: "..."}
+      if (response.data && response.data.data && response.data.data.otpId) {
+        const extractedOtpId = response.data.data.otpId;
+        setOtpId(extractedOtpId);
+        console.log('✅ Email OTP ID successfully set:', extractedOtpId);
+      } else {
+        console.log('❌ Email OTP ID not found in expected location');
+        console.log('Full response:', JSON.stringify(response.data, null, 2));
+        Alert.alert('Error', 'Failed to get OTP ID. Please try again.');
+        setIsOtpSent(false);
+        setModalVisible(false);
+        setIsVerifying(false);
+      }
     } catch (error) {
       console.error('Error sending email OTP:', error);
+      Alert.alert('Error', 'Failed to send email OTP. Please try again.');
+      setIsOtpSent(false);
+      setModalVisible(false);
+      setIsVerifying(false);
     }
   };
 
   // Handle phone OTP submission
   const handlePhoneSubmit = async () => {
-    if (!/^\d{10}$/.test(phone)) {
-      alert('Please enter a valid phone number');
+    // More flexible phone validation (10 digits with optional +91 prefix)
+    const phonePattern = /^(\+91|91)?[6-9]\d{9}$/;
+    if (!phonePattern.test(phone.replace(/\s/g, ''))) {
+      Alert.alert('Invalid Phone', 'Please enter a valid 10-digit Indian mobile number starting with 6-9');
       return;
     }
+    
+    // Reset previous states
+    setOtpId(null);
+    setOtp('');
     setIsPhoneOtpSent(true);
     setModalVisible(true);
     setIsPhoneVerifying(true);
@@ -72,52 +103,91 @@ const EmailVerificationScreen = ({ navigation, route }) => {
       setIsPhoneVerifying(false);
     }, 3000);
 
+    // Format phone number to include +91 if not present
+    let formattedPhone = phone.replace(/\s/g, ''); // Remove spaces
+    if (!formattedPhone.startsWith('+91') && !formattedPhone.startsWith('91')) {
+      formattedPhone = '+91' + formattedPhone;
+    } else if (formattedPhone.startsWith('91') && !formattedPhone.startsWith('+91')) {
+      formattedPhone = '+' + formattedPhone;
+    }
+    
+    console.log('Sending phone OTP with formatted number:', formattedPhone);
+
     try {
       const response = await axios.post(
         'https://truffle-0ol8.onrender.com/api/invite/send/phone/OTP',
-        { phone },
+        { phone: formattedPhone },
         {
           headers: {
             'Content-Type': 'application/json',
           },
         },
       );
-      console.log(response.data);
-      // Assume OTP is sent successfully for phone
-    } catch (error) {
+      console.log('Phone OTP response:', response.data);
+      console.log('Phone response status:', response.data.status);
+      console.log('Phone response data object:', response.data.data);
+      
+      // Based on your API structure: {status: true, data: {otpId: "68f74db26cfc738dbbb780fd"}, message: "OTP sent to phone."}
+      if (response.data && response.data.data && response.data.data.otpId) {
+        const extractedOtpId = response.data.data.otpId;
+        setOtpId(extractedOtpId);
+        console.log('✅ Phone OTP ID successfully set:', extractedOtpId);
+      } else {
+        console.log('❌ Phone OTP ID not found in expected location');
+        console.log('Full phone response:', JSON.stringify(response.data, null, 2));
+        Alert.alert('Error', 'Failed to get phone OTP ID. Please try again.');
+        setIsPhoneOtpSent(false);
+        setModalVisible(false);
+        setIsPhoneVerifying(false);
+      }
+    } catch (error: any) {
       console.error('Error sending phone OTP:', error);
+      console.error('Phone OTP error response:', error.response?.data);
+      console.error('Phone OTP error status:', error.response?.status);
+      
+      if (error.response?.data?.message) {
+        Alert.alert('Error', error.response.data.message);
+      } else {
+        Alert.alert('Error', 'Failed to send phone OTP. Please try again.');
+      }
+      
+      // Reset states on error
+      setIsPhoneOtpSent(false);
+      setModalVisible(false);
+      setIsPhoneVerifying(false);
     }
   };
 
   // Handle OTP verification for both email and phone
-  const handleOtpSubmit = async type => {
-    const otpString = otp.join(''); // Combine the OTP array into a string
-
-    if (type === 'email' && otpString === '123456') {
-      // Replace with actual OTP verification logic
-      setIsEmailVerified(true);
-      setOtp(['', '', '', '', '', '']); // Reset OTP fields
-      setIsVerifying(false);
-      setModalVisible(false);
-      if (!isPhoneVerified) {
-        return;
-      }
-      navigation.navigate('NextScreen');
-    } else if (type === 'phone' && otpString === '654321') {
-      // Replace with actual OTP verification logic
-      setIsPhoneVerified(true);
-      setOtp(['', '', '', '', '', '']); // Reset OTP fields
-      setIsPhoneVerifying(false);
-      setModalVisible(false);
-      if (isEmailVerified) {
-        navigation.navigate('NextScreen');
-      }
-    } else {
-      alert('Invalid OTP');
+  const handleOtpSubmit = async (type: string) => {
+    // Debug logging
+    console.log('Attempting OTP verification:', { type, otp, otpId });
+    
+    // Validate required fields
+    if (!otp) {
+      Alert.alert('Error', 'Please enter the OTP');
+      return;
     }
-
+    
+    if (!otpId) {
+      Alert.alert('Error', 'OTP session expired. Please request a new OTP.');
+      setModalVisible(false);
+      if (type === 'email') {
+        setIsOtpSent(false);
+      } else {
+        setIsPhoneOtpSent(false);
+      }
+      return;
+    }
+    
     try {
-      const otpPayload = { otp: otpString, otpId }; // Use the joined OTP string here
+      // Ensure OTP is sent as string and otpId is properly formatted
+      const otpPayload = { 
+        otp: otp.toString().trim(), 
+        otpId: String(otpId).trim() 
+      };
+      console.log('Sending OTP payload:', otpPayload);
+      
       if (type === 'email') {
         const emailVerifyResponse = await axios.post(
           'https://truffle-0ol8.onrender.com/api/invite/verify/email/OTP',
@@ -126,37 +196,78 @@ const EmailVerificationScreen = ({ navigation, route }) => {
             headers: { 'Content-Type': 'application/json' },
           },
         );
-        console.log(
-          'Email OTP verification response:',
-          emailVerifyResponse.data,
-        );
+        console.log('Email OTP verification response:', emailVerifyResponse.data);
+        
+        // Check if verification was successful
+        if (emailVerifyResponse.data.success || emailVerifyResponse.status === 200) {
+          setIsEmailVerified(true);
+          setOtp('');
+          setIsVerifying(false);
+          setModalVisible(false);
+          setIsOtpSent(false);
+          Alert.alert('Success', 'Email verified successfully!');
+        } else {
+          Alert.alert('Error', 'Invalid OTP. Please try again.');
+        }
+        
       } else if (type === 'phone') {
-        const phoneVerifyResponse = await axios.post(
-          'https://truffle-0ol8.onrender.com/api/invite/verify/phone/OTP',
-          otpPayload,
-          {
-            headers: { 'Content-Type': 'application/json' },
-          },
-        );
-        console.log(
-          'Phone OTP verification response:',
-          phoneVerifyResponse.data,
-        );
+        // For testing: Use default OTP "123456" for phone verification
+        if (otp === '123456') {
+          console.log('✅ Phone OTP verified with default test OTP');
+          setIsPhoneVerified(true);
+          setOtp('');
+          setIsPhoneVerifying(false);
+          setModalVisible(false);
+          setIsPhoneOtpSent(false);
+          Alert.alert('Success', 'Phone verified successfully! (Test Mode)');
+        } else {
+          // Still try API verification in case you want to test real OTP later
+          try {
+            const phoneVerifyResponse = await axios.post(
+              'https://truffle-0ol8.onrender.com/api/invite/verify/phone/OTP',
+              otpPayload,
+              {
+                headers: { 'Content-Type': 'application/json' },
+              },
+            );
+            console.log('Phone OTP verification response:', phoneVerifyResponse.data);
+            
+            // Check if verification was successful
+            if (phoneVerifyResponse.data.success || phoneVerifyResponse.status === 200) {
+              setIsPhoneVerified(true);
+              setOtp('');
+              setIsPhoneVerifying(false);
+              setModalVisible(false);
+              setIsPhoneOtpSent(false);
+              Alert.alert('Success', 'Phone verified successfully!');
+            } else {
+              Alert.alert('Error', 'Invalid OTP. Please try again. (Hint: Use 123456 for testing)');
+            }
+          } catch (apiError) {
+            console.log('API verification failed, but you can use 123456 for testing');
+            Alert.alert('Error', 'Invalid OTP. Please try again. (Hint: Use 123456 for testing)');
+          }
+        }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error verifying OTP:', error);
-      alert('Failed to verify OTP');
-    }
-  };
-
-  const handleOtpChange = (index, value) => {
-    let otpCopy = [...otp];
-    otpCopy[index] = value.slice(0, 1); // Ensure only one character per box
-    setOtp(otpCopy);
-
-    // Move to the next box if the current input is not empty
-    if (value && index < otp.length - 1) {
-      otpRefs.current[index + 1].focus();
+      console.error('Error response data:', error.response?.data);
+      console.error('Error response status:', error.response?.status);
+      
+      // Handle different types of errors
+      if (error.response) {
+        // Server responded with error status
+        const errorData = error.response.data;
+        const errorMessage = errorData?.message || errorData?.error || 'Invalid OTP. Please try again.';
+        console.error('Server error details:', errorData);
+        Alert.alert('Verification Failed', errorMessage);
+      } else if (error.request) {
+        // Network error
+        Alert.alert('Network Error', 'Please check your connection and try again.');
+      } else {
+        // Other error
+        Alert.alert('Error', 'Failed to verify OTP. Please try again.');
+      }
     }
   };
 
@@ -179,15 +290,14 @@ const EmailVerificationScreen = ({ navigation, route }) => {
               Email<Text style={styles.required}> *</Text>
             </Text>
             {!isEmailVerified ? (
-              <View style={{flex:1}}>
+              <View>
                 <TextInput
                   style={styles.textInput}
                   placeholder="example@gmail.com"
                   value={email}
                   onChangeText={setEmail}
                 />
-                <View style={{position:"absolute", bottom:0, alignSelf:"center"}}>
-                  {isOtpSent && !isEmailVerified ? (
+                {isOtpSent && !isEmailVerified ? (
                   <TouchableOpacity
                     style={[styles.btn, styles.filled]}
                     onPress={handleEmailSubmit}
@@ -202,7 +312,6 @@ const EmailVerificationScreen = ({ navigation, route }) => {
                     <Text style={styles.filledText}>Send OTP</Text>
                   </TouchableOpacity>
                 )}
-                </View>
               </View>
             ) : (
               <View style={styles.row}>
@@ -212,7 +321,7 @@ const EmailVerificationScreen = ({ navigation, route }) => {
                   onChangeText={setEmail}
                   editable={false}
                 />
-                <Ionicons name="checkmark-circle" color={'green'} size={22} />
+                <Text style={styles.verifiedText}>Verified</Text>
               </View>
             )}
           </>
@@ -224,16 +333,19 @@ const EmailVerificationScreen = ({ navigation, route }) => {
           )}
 
           {isEmailVerified && !isPhoneVerified && (
-            <View style={{flex:1}}>
+            <>
               <TextInput
                 style={styles.textInput}
-                placeholder="Enter phone number"
+                placeholder="Enter phone number (e.g., 8130541407)"
                 value={phone}
                 onChangeText={setPhone}
                 keyboardType="numeric"
+                maxLength={13}
               />
-              <View style={{position:"absolute", bottom:0, alignSelf:"center"}}>
-                {isPhoneOtpSent && !isPhoneVerified ? (
+              <Text style={styles.helperText}>
+                Enter 10-digit mobile number. We'll add +91 automatically.
+              </Text>
+              {isPhoneOtpSent && !isPhoneVerified ? (
                 <TouchableOpacity
                   style={[styles.btn, styles.filled]}
                   onPress={handlePhoneSubmit}
@@ -248,8 +360,7 @@ const EmailVerificationScreen = ({ navigation, route }) => {
                   <Text style={styles.filledText}>Send OTP</Text>
                 </TouchableOpacity>
               )}
-              </View>
-            </View>
+            </>
           )}
 
           {isPhoneVerified && (
@@ -260,7 +371,7 @@ const EmailVerificationScreen = ({ navigation, route }) => {
                 onChangeText={setPhone}
                 editable={false}
               />
-              <Ionicons name="checkmark-circle" color={'green'} size={22} />
+              <Text style={styles.verifiedText}>Verified</Text>
             </View>
           )}
         </View>
@@ -270,7 +381,22 @@ const EmailVerificationScreen = ({ navigation, route }) => {
         <View style={styles.footer}>
           <TouchableOpacity
             style={[styles.btn, styles.filled]}
-            onPress={() => navigation.navigate('Detail')}
+            onPress={() => {
+              // Format phone number to include +91 prefix for API
+              let formattedPhone = phone.replace(/\s/g, ''); // Remove spaces
+              if (!formattedPhone.startsWith('+91') && !formattedPhone.startsWith('91')) {
+                formattedPhone = '+91' + formattedPhone;
+              } else if (formattedPhone.startsWith('91') && !formattedPhone.startsWith('+91')) {
+                formattedPhone = '+' + formattedPhone;
+              }
+              
+              // Store email and formatted phone in context
+              updateRegistrationData({
+                email: email,
+                phone: formattedPhone,
+              });
+              navigation.navigate('Detail');
+            }}
           >
             <Text style={styles.filledText}>Next</Text>
           </TouchableOpacity>
@@ -297,20 +423,14 @@ const EmailVerificationScreen = ({ navigation, route }) => {
               {isPhoneOtpSent ? 'phone' : 'email'}.
             </Text>
 
-            <View style={styles.otpContainer}>
-              {otp.map((digit, index) => (
-                <TextInput
-                  key={index}
-                  ref={el => (otpRefs.current[index] = el)}
-                  style={styles.otpInput}
-                  value={digit}
-                  onChangeText={value => handleOtpChange(index, value)}
-                  keyboardType="numeric"
-                  maxLength={1}
-                  textAlign="center"
-                />
-              ))}
-            </View>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Enter OTP"
+              value={otp}
+              onChangeText={setOtp}
+              keyboardType="numeric"
+              maxLength={6}
+            />
 
             <TouchableOpacity
               style={[styles.btn, styles.filled]}
@@ -334,7 +454,7 @@ const EmailVerificationScreen = ({ navigation, route }) => {
               style={[styles.btn, styles.cancelBtn]}
               onPress={() => setModalVisible(false)}
             >
-              <Text style={styles.cancelText}>Resend OTP</Text>
+              <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -356,11 +476,11 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   card: {
+    backgroundColor: '#fff',
     borderRadius: 12,
     paddingVertical: 20,
     elevation: 3,
     width: '100%',
-    height: '85%',
   },
   textInput: {
     borderWidth: 1,
@@ -377,7 +497,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginHorizontal: 5,
     paddingHorizontal: 70,
-    alignSelf: 'center',
   },
   filled: { backgroundColor: '#4F0D50' },
   filledText: { color: '#fff', fontWeight: '600' },
@@ -448,7 +567,7 @@ const styles = StyleSheet.create({
   },
   cancelText: {
     color: '#333',
-    fontSize: 13,
+    fontSize: 16,
   },
   loadingContainer: {
     flexDirection: 'row',
@@ -468,20 +587,16 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginBottom: 20,
   },
-  otpContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 25,
+  cancelBtn: {
+    backgroundColor: '#f0f0f0',
+    marginTop: 10,
   },
-  otpInput: {
-    borderBottomWidth: 1,
-    borderColor: '#ccc',
-    padding: 10,
-    width: 50,
-    height: 50,
-    borderRadius: 5,
-    fontSize: 20,
-    textAlign: 'center',
+  helperText: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: -10,
+    marginBottom: 10,
+    fontStyle: 'italic',
   },
 });
 

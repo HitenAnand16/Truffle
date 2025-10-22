@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -15,33 +15,54 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import Octicons from 'react-native-vector-icons/Octicons';
 import LinearGradient from 'react-native-linear-gradient';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
+import { useUserActions } from '../../context/UserActionsContext';
 
 const { width } = Dimensions.get('window'); // Get screen width for responsive design
 
-const Home = ({ navigation }) => {
+const Home = ({ navigation }: any) => {
+  const { addLikedUser, addDislikedUser, isUserActioned } = useUserActions();
   const [currentIndex, setCurrentIndex] = useState(0); // Track the current card
   const [isModalVisible, setIsModalVisible] = useState(false); // Track modal visibility
   const [actionMessage, setActionMessage] = useState(''); // Message in the modal
 
+  // Filter out users that have been liked or disliked
+  const availableUsers = useMemo(() => {
+    return demoData.filter(user => !isUserActioned(user.id));
+  }, [isUserActioned]);
+
   const handleLike = () => {
-    setActionMessage('Liked!'); // Set message for like
-    setIsModalVisible(true); // Show popup
-    setTimeout(() => {
-      setIsModalVisible(false); // Hide popup after 2 seconds
-      setCurrentIndex(prevIndex => (prevIndex + 1) % demoData.length); // Move to the next card
-    }, 2000);
+    if (availableUsers.length > 0) {
+      const currentUser = availableUsers[currentIndex];
+      addLikedUser(currentUser.id);
+      setActionMessage('Liked!'); // Set message for like
+      setIsModalVisible(true); // Show popup
+      setTimeout(() => {
+        setIsModalVisible(false); // Hide popup after 2 seconds
+        // Don't increment index, let the filter handle showing next user
+        if (currentIndex >= availableUsers.length - 1) {
+          setCurrentIndex(0); // Reset to first available user
+        }
+      }, 2000);
+    }
   };
 
   const handleDislike = () => {
-    setActionMessage('Disliked!'); // Set message for dislike
-    setIsModalVisible(true); // Show popup
-    setTimeout(() => {
-      setIsModalVisible(false); // Hide popup after 2 seconds
-      setCurrentIndex(prevIndex => (prevIndex + 1) % demoData.length); // Move to the next card
-    }, 2000);
+    if (availableUsers.length > 0) {
+      const currentUser = availableUsers[currentIndex];
+      addDislikedUser(currentUser.id);
+      setActionMessage('Disliked!'); // Set message for dislike
+      setIsModalVisible(true); // Show popup
+      setTimeout(() => {
+        setIsModalVisible(false); // Hide popup after 2 seconds
+        // Don't increment index, let the filter handle showing next user
+        if (currentIndex >= availableUsers.length - 1) {
+          setCurrentIndex(0); // Reset to first available user
+        }
+      }, 2000);
+    }
   };
 
-  const handleCardClick = user => {
+  const handleCardClick = (user: any) => {
     // Navigate to UserDetails screen and pass user data as params
     navigation.navigate('userDetail', { user });
   };
@@ -93,13 +114,22 @@ const Home = ({ navigation }) => {
       {/* Card Stack */}
       <View style={styles.cardStack}>
         {(() => {
-          const frontCard = demoData[currentIndex];
-          const nextCard = demoData[(currentIndex + 1) % demoData.length]; // wrap-around next card
+          // Show message if no available users
+          if (availableUsers.length === 0) {
+            return (
+              <View style={styles.noUsersContainer}>
+                <Text style={styles.noUsersText}>No more users to show!</Text>
+              </View>
+            );
+          }
+
+          const frontCard = availableUsers[currentIndex % availableUsers.length];
+          const nextCard = availableUsers[(currentIndex + 1) % availableUsers.length]; // wrap-around next card
 
           return (
             <>
               {/* Back / Upcoming Card (slightly visible) */}
-              {nextCard && (
+              {nextCard && availableUsers.length > 1 && (
                 <ImageBackground
                   source={{ uri: nextCard.profilePicture }}
                   style={[
@@ -296,6 +326,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#ffffff2b',
+  },
+  noUsersContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 50,
+  },
+  noUsersText: {
+    fontSize: 18,
+    color: '#666',
+    textAlign: 'center',
+    fontWeight: '500',
   },
 });
 
