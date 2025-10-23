@@ -10,7 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { launchImageLibrary} from 'react-native-image-picker';
+import { launchImageLibrary } from 'react-native-image-picker';
 import { useRegistration } from '../../../context/RegistrationContext';
 import {
   generateUniqueTestEmail,
@@ -202,6 +202,10 @@ const UploadPicRegisgter = ({ navigation }: { navigation: any }) => {
           )}
         </TouchableOpacity>
 
+        <Text style={{ marginTop: 10, color: '#6B6B6B', fontSize: 14 }}>
+          Attach a clear and identifiable photo for smooth{'\n'}verification
+        </Text>
+
         <TouchableOpacity
           style={[styles.nextButton, isSubmitting && styles.disabledButton]}
           onPress={handleSubmit}
@@ -221,61 +225,75 @@ const UploadPicRegisgter = ({ navigation }: { navigation: any }) => {
         onRequestClose={() => setModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <View
-              style={{
-                backgroundColor: 'white',
-                alignItems: 'center',
-                padding: 30,
-                borderRadius: 35,
-                elevation: 5, // For Android shadow
-                shadowColor: '#000', // Shadow color (for iOS)
-                shadowOffset: { width: 0, height: 2 }, // Shadow offset (horizontal, vertical)
-                shadowOpacity: 0.1, // Shadow opacity
-                shadowRadius: 10, // Shadow blur radius
+          <View style={styles.modalContent}>
+            <Image
+              source={require('../../../../assets/glass.png')}
+              style={styles.modalImage}
+            />
+            <Text style={styles.modalTitle}>
+              Thank you, {registrationData.name}
+            </Text>
+            <Text style={styles.modalSubText}>
+              We've received your application and will get back to you as soon
+              as we can.
+            </Text>
+            <Text style={styles.modalEmailText}>
+              We've sent a verification email to {registrationData.email}.
+              Please check your email and click the link to verify.
+            </Text>
+          </View>
+
+          <View style={styles.modalButtonsContainer}>
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => {
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'Initial' }],
+                });
+                setModalVisible(false);
               }}
             >
-              <Image
-                source={require('../../../../assets/glass.png')} // Use your image here
-                style={styles.modalImage}
-              />
-              <Text style={styles.modalText}>Thank you, {registrationData.name}</Text>
-              <Text style={styles.modalSubText}>
-                We’ve received your application and will get back to you as soon
-                as we can.
-              </Text>
-              <Text style={styles.modalEmailText}>
-                We’ve sent a verification email to {registrationData.email}. Please check
-                your email and click the link to verify.
-              </Text>
-            </View>
-          </View>
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => {
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'Initial' }],
-              });
-              setModalVisible(false); // Navigate to the main screen
-            }}
-          >
-            <Text style={styles.buttonText1}>Go Back to Main Screen</Text>
-          </TouchableOpacity>
+              <View style={styles.buttonIconContainer}>
+                <Ionicons name="person-outline" size={24} color="#333" />
+              </View>
+              <Text style={styles.modalButtonText}>My information</Text>
+              <Ionicons name="chevron-forward" size={20} color="#333" />
+            </TouchableOpacity>
 
-          {/* Track your application button */}
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => {
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'Track' }],
-              });
-              setModalVisible(false); // Navigate to the track application screen
-            }}
-          >
-            <Text style={styles.buttonText1}>Track Your Application</Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => {
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'Track' }],
+                });
+                setModalVisible(false);
+              }}
+            >
+              <View style={styles.buttonIconContainer}>
+                <Ionicons name="play-circle-outline" size={24} color="#333" />
+              </View>
+              <Text style={styles.modalButtonText}>
+                Learn more about Truffle
+              </Text>
+              <Ionicons name="chevron-forward" size={20} color="#333" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => {
+                // Add referral functionality here
+                setModalVisible(false);
+              }}
+            >
+              <View style={styles.buttonIconContainer}>
+                <Ionicons name="add-outline" size={24} color="#333" />
+              </View>
+              <Text style={styles.modalButtonText}>Add referrals</Text>
+              <Ionicons name="chevron-forward" size={20} color="#333" />
+            </TouchableOpacity>
+          </View>
         </View>
       </Modal>
     </SafeAreaView>
@@ -306,7 +324,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '500',
-    marginBottom: 8,
+    // marginBottom: 8,
     color: '#333',
   },
   nextButton: {
@@ -337,7 +355,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#f1e6ff',
     alignSelf: 'center',
-    marginTop: 10,
+    marginTop: 20,
+    marginBottom: 10,
   },
   icon: {
     fontSize: 50,
@@ -363,21 +382,43 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FBF4FD',
+    backgroundColor: '#F3F0F5',
+    paddingHorizontal: 20,
   },
   modalContainer: {
     padding: 30,
     borderRadius: 20,
     alignItems: 'center',
     width: '100%',
-    // height: '100%',
     justifyContent: 'center',
+    height: '90%',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+    borderRadius: 43,
+    marginBottom: 30,
+    width: '90%',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    paddingVertical: 80,
   },
   modalImage: {
-    width: '100%',
+    width: 120,
     height: 90,
     resizeMode: 'contain',
-    marginBottom: 20,
+    marginBottom: 25,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 15,
+    textAlign: 'center',
   },
   modalText: {
     fontSize: 25,
@@ -388,14 +429,45 @@ const styles = StyleSheet.create({
   modalSubText: {
     fontSize: 16,
     color: '#333',
-    marginBottom: 10,
+    marginBottom: 15,
     textAlign: 'center',
+    lineHeight: 22,
   },
   modalEmailText: {
     fontSize: 14,
-    color: '#333',
-    marginBottom: 20,
+    color: '#888',
     textAlign: 'center',
+    lineHeight: 20,
+  },
+  modalButtonsContainer: {
+    width: '90%',
+    paddingVertical: 10,
+    borderRadius: 20,
+    marginBottom: 5,
+  },
+  modalButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 15,
+    paddingHorizontal: 15,
+    marginBottom: 10,
+    backgroundColor: 'white',
+    borderRadius: 18,
+  },
+  buttonIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 15,
+  },
+  modalButtonText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#000',
+    fontWeight: '500',
   },
   button: {
     backgroundColor: '#4F0D50',

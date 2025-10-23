@@ -28,7 +28,6 @@ const EmailVerificationScreen = ({ navigation, route }: any) => {
   const [isPhoneVerifying, setIsPhoneVerifying] = useState(false);
   const [isPhoneOtpSent, setIsPhoneOtpSent] = useState(false);
 
-
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   // Handle email OTP submission
@@ -37,17 +36,19 @@ const EmailVerificationScreen = ({ navigation, route }: any) => {
       Alert.alert('Invalid Email', 'Please enter a valid email');
       return;
     }
-    
+
     // Reset previous states
-    setOtpId(null);
+    setOtpId('test-email-otp-id' as any); // Default OTP ID for testing
     setOtp('');
     setIsOtpSent(true);
     setModalVisible(true);
     setIsVerifying(true);
     setTimeout(() => {
       setIsVerifying(false);
-    }, 3000);
+    }, 1000); // Reduced timeout for testing
 
+    // COMMENTED OUT API LOGIC - Using default OTP 123456 for testing
+    /*
     try {
       const response = await axios.post(
         'https://truffle-0ol8.onrender.com/api/invite/send/email/OTP',
@@ -82,6 +83,7 @@ const EmailVerificationScreen = ({ navigation, route }: any) => {
       setModalVisible(false);
       setIsVerifying(false);
     }
+    */
   };
 
   // Handle phone OTP submission
@@ -89,20 +91,25 @@ const EmailVerificationScreen = ({ navigation, route }: any) => {
     // More flexible phone validation (10 digits with optional +91 prefix)
     const phonePattern = /^(\+91|91)?[6-9]\d{9}$/;
     if (!phonePattern.test(phone.replace(/\s/g, ''))) {
-      Alert.alert('Invalid Phone', 'Please enter a valid 10-digit Indian mobile number starting with 6-9');
+      Alert.alert(
+        'Invalid Phone',
+        'Please enter a valid 10-digit Indian mobile number starting with 6-9',
+      );
       return;
     }
-    
+
     // Reset previous states
-    setOtpId(null);
+    setOtpId('test-phone-otp-id' as any); // Default OTP ID for testing
     setOtp('');
     setIsPhoneOtpSent(true);
     setModalVisible(true);
     setIsPhoneVerifying(true);
     setTimeout(() => {
       setIsPhoneVerifying(false);
-    }, 3000);
+    }, 1000); // Reduced timeout for testing
 
+    // COMMENTED OUT API LOGIC - Using default OTP 123456 for testing
+    /*
     // Format phone number to include +91 if not present
     let formattedPhone = phone.replace(/\s/g, ''); // Remove spaces
     if (!formattedPhone.startsWith('+91') && !formattedPhone.startsWith('91')) {
@@ -156,19 +163,45 @@ const EmailVerificationScreen = ({ navigation, route }: any) => {
       setModalVisible(false);
       setIsPhoneVerifying(false);
     }
+    */
   };
 
   // Handle OTP verification for both email and phone
   const handleOtpSubmit = async (type: string) => {
     // Debug logging
     console.log('Attempting OTP verification:', { type, otp, otpId });
-    
+
     // Validate required fields
     if (!otp) {
       Alert.alert('Error', 'Please enter the OTP');
       return;
     }
-    
+
+    // SIMPLIFIED LOGIC - Using default OTP 123456 for both email and phone
+    if (otp === '123456') {
+      console.log(`✅ ${type} OTP verified with default test OTP`);
+
+      if (type === 'email') {
+        setIsEmailVerified(true);
+        setOtp('');
+        setIsVerifying(false);
+        setModalVisible(false);
+        setIsOtpSent(false);
+        Alert.alert('Success', 'Email verified successfully! (Test Mode)');
+      } else if (type === 'phone') {
+        setIsPhoneVerified(true);
+        setOtp('');
+        setIsPhoneVerifying(false);
+        setModalVisible(false);
+        setIsPhoneOtpSent(false);
+        Alert.alert('Success', 'Phone verified successfully! (Test Mode)');
+      }
+    } else {
+      Alert.alert('Error', 'Invalid OTP. Please use 123456 for testing.');
+    }
+
+    // COMMENTED OUT API LOGIC - Using default OTP 123456 for testing
+    /*
     if (!otpId) {
       Alert.alert('Error', 'OTP session expired. Please request a new OTP.');
       setModalVisible(false);
@@ -269,6 +302,7 @@ const EmailVerificationScreen = ({ navigation, route }: any) => {
         Alert.alert('Error', 'Failed to verify OTP. Please try again.');
       }
     }
+    */
   };
 
   return (
@@ -297,21 +331,6 @@ const EmailVerificationScreen = ({ navigation, route }: any) => {
                   value={email}
                   onChangeText={setEmail}
                 />
-                {isOtpSent && !isEmailVerified ? (
-                  <TouchableOpacity
-                    style={[styles.btn, styles.filled]}
-                    onPress={handleEmailSubmit}
-                  >
-                    <Text style={styles.filledText}>Verifying...</Text>
-                  </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity
-                    style={[styles.btn, styles.filled]}
-                    onPress={handleEmailSubmit}
-                  >
-                    <Text style={styles.filledText}>Send OTP</Text>
-                  </TouchableOpacity>
-                )}
               </View>
             ) : (
               <View style={styles.row}>
@@ -321,7 +340,7 @@ const EmailVerificationScreen = ({ navigation, route }: any) => {
                   onChangeText={setEmail}
                   editable={false}
                 />
-                <Text style={styles.verifiedText}>Verified</Text>
+                <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
               </View>
             )}
           </>
@@ -345,21 +364,6 @@ const EmailVerificationScreen = ({ navigation, route }: any) => {
               <Text style={styles.helperText}>
                 Enter 10-digit mobile number. We'll add +91 automatically.
               </Text>
-              {isPhoneOtpSent && !isPhoneVerified ? (
-                <TouchableOpacity
-                  style={[styles.btn, styles.filled]}
-                  onPress={handlePhoneSubmit}
-                >
-                  <Text style={styles.filledText}>Verifying...</Text>
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity
-                  style={[styles.btn, styles.filled]}
-                  onPress={handlePhoneSubmit}
-                >
-                  <Text style={styles.filledText}>Send OTP</Text>
-                </TouchableOpacity>
-              )}
             </>
           )}
 
@@ -371,25 +375,52 @@ const EmailVerificationScreen = ({ navigation, route }: any) => {
                 onChangeText={setPhone}
                 editable={false}
               />
-              <Text style={styles.verifiedText}>Verified</Text>
+              <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
             </View>
           )}
         </View>
       </View>
 
-      {isEmailVerified && isPhoneVerified && (
-        <View style={styles.footer}>
+      {/* Bottom Button */}
+      <View style={styles.footer}>
+        {!isEmailVerified ? (
+          <TouchableOpacity
+            style={[styles.btn, styles.filled]}
+            onPress={handleEmailSubmit}
+            disabled={isOtpSent}
+          >
+            <Text style={styles.filledText}>
+              {isOtpSent ? 'Verifying...' : 'Send OTP'}
+            </Text>
+          </TouchableOpacity>
+        ) : !isPhoneVerified ? (
+          <TouchableOpacity
+            style={[styles.btn, styles.filled]}
+            onPress={handlePhoneSubmit}
+            disabled={isPhoneOtpSent}
+          >
+            <Text style={styles.filledText}>
+              {isPhoneOtpSent ? 'Verifying...' : 'Send OTP'}
+            </Text>
+          </TouchableOpacity>
+        ) : (
           <TouchableOpacity
             style={[styles.btn, styles.filled]}
             onPress={() => {
               // Format phone number to include +91 prefix for API
               let formattedPhone = phone.replace(/\s/g, ''); // Remove spaces
-              if (!formattedPhone.startsWith('+91') && !formattedPhone.startsWith('91')) {
+              if (
+                !formattedPhone.startsWith('+91') &&
+                !formattedPhone.startsWith('91')
+              ) {
                 formattedPhone = '+91' + formattedPhone;
-              } else if (formattedPhone.startsWith('91') && !formattedPhone.startsWith('+91')) {
+              } else if (
+                formattedPhone.startsWith('91') &&
+                !formattedPhone.startsWith('+91')
+              ) {
                 formattedPhone = '+' + formattedPhone;
               }
-              
+
               // Store email and formatted phone in context
               updateRegistrationData({
                 email: email,
@@ -400,8 +431,8 @@ const EmailVerificationScreen = ({ navigation, route }: any) => {
           >
             <Text style={styles.filledText}>Next</Text>
           </TouchableOpacity>
-        </View>
-      )}
+        )}
+      </View>
 
       <Modal
         visible={modalVisible}
@@ -423,14 +454,31 @@ const EmailVerificationScreen = ({ navigation, route }: any) => {
               {isPhoneOtpSent ? 'phone' : 'email'}.
             </Text>
 
-            <TextInput
-              style={styles.textInput}
-              placeholder="Enter OTP"
-              value={otp}
-              onChangeText={setOtp}
-              keyboardType="numeric"
-              maxLength={6}
-            />
+            <View style={styles.otpInputContainer}>
+              <View style={styles.otpContainer}>
+                {Array(6)
+                  .fill(0)
+                  .map((_, index) => (
+                    <View key={index} style={styles.dashContainer}>
+                      <Text style={styles.dashText}>
+                        {otp[index] ? otp[index] : '_'}
+                      </Text>
+                    </View>
+                  ))}
+              </View>
+
+              {/* Hidden TextInput for typing */}
+              <TextInput
+                style={styles.hiddenInput}
+                value={otp}
+                onChangeText={(text) => {
+                  if (/^\d*$/.test(text) && text.length <= 6) setOtp(text);
+                }}
+                keyboardType="numeric"
+                maxLength={6}
+                autoFocus
+              />
+            </View>
 
             <TouchableOpacity
               style={[styles.btn, styles.filled]}
@@ -454,7 +502,7 @@ const EmailVerificationScreen = ({ navigation, route }: any) => {
               style={[styles.btn, styles.cancelBtn]}
               onPress={() => setModalVisible(false)}
             >
-              <Text style={styles.cancelText}>Cancel</Text>
+              <Text style={styles.cancelText}>Resend OTP</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -479,7 +527,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 12,
     paddingVertical: 20,
-    elevation: 3,
     width: '100%',
   },
   textInput: {
@@ -527,7 +574,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   verifiedText: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#4CAF50',
     fontWeight: '500',
   },
@@ -539,7 +586,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 8,
-    padding: 10,
+    paddingHorizontal: 10,
     backgroundColor: '#fff',
     marginBottom: 15,
   },
@@ -597,6 +644,34 @@ const styles = StyleSheet.create({
     marginTop: -10,
     marginBottom: 10,
     fontStyle: 'italic',
+  },
+  otpInputContainer: {
+    marginBottom: 15,
+  },
+  otpContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+  },
+  dashContainer: {
+    width: 40,
+    height: 50,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  dashText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+  },
+  hiddenInput: {
+    position: 'absolute',
+    opacity: 0,
+    width: 1,
+    height: 1,
   },
 });
 

@@ -123,203 +123,259 @@ const UserDetails = ({ route, navigation }: any) => {
   );
 
   const renderModalContent = () => (
-    <ScrollView
-      style={styles.modalScrollView}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Header Info */}
-      <View style={styles.modalHeader}>
-        <Text style={styles.modalName}>
-          {user.firstName}, {user.age}
-        </Text>
-        <Text style={styles.modalAge}> {user.location.city} </Text>
+    <>
+      <ScrollView
+        style={styles.modalScrollView}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header Info */}
+        <View style={styles.modalHeader}>
+          <Text style={styles.modalName}>
+            {user.firstName}, {user.age}
+          </Text>
+          <Text style={styles.modalAge}> {user.location.city} </Text>
+        </View>
+
+        {/* About */}
+        {user.about &&
+          renderSection(
+            'About Me',
+            <Text style={styles.aboutText}>{user.about}</Text>,
+          )}
+
+        {/* Description */}
+        {user.description &&
+          renderSection(
+            'Description',
+            <Text style={styles.descriptionText}>{user.description}</Text>,
+          )}
+
+        {/* Personal Details */}
+        {renderSection(
+          'Personal Details',
+          <View>
+            {user.occupation && renderInfoItem('Occupation', user.occupation)}
+            {user.education && renderInfoItem('Education', user.education)}
+            {user.height && renderInfoItem('Height', user.height)}
+            {user.bodyType && renderInfoItem('Body Type', user.bodyType)}
+            {user.smokingStatus &&
+              renderInfoItem('Smoking', user.smokingStatus)}
+            {user.drinkingStatus &&
+              renderInfoItem('Drinking', user.drinkingStatus)}
+            {user.religion && renderInfoItem('Religion', user.religion)}
+            {user.politicalViews &&
+              renderInfoItem('Political Views', user.politicalViews)}
+          </View>,
+        )}
+
+        {/* Contact Info */}
+        {renderSection(
+          'Contact Information',
+          <View>
+            {user.email && renderInfoItem('Email', user.email)}
+            {user.phone && renderInfoItem('Phone', user.phone)}
+            {user.location &&
+              renderInfoItem(
+                'Location',
+                `${user.location.city || ''}, ${user.location.state || ''}`,
+              )}
+          </View>,
+        )}
+
+        {/* Interests */}
+        {user.interests &&
+          user.interests.length > 0 &&
+          renderSection('Interests', renderTags(user.interests))}
+
+        {/* Strengths */}
+        {user.strengths &&
+          user.strengths.length > 0 &&
+          renderSection('Strengths', renderTags(user.strengths))}
+
+        {/* Languages */}
+        {user.languages &&
+          user.languages.length > 0 &&
+          renderSection('Languages', renderTags(user.languages))}
+
+        {/* Looking For */}
+        {user.whatAmILookingFor &&
+          renderSection(
+            "What I'm Looking For",
+            <View>
+              {user.whatAmILookingFor.relationshipType &&
+                renderInfoItem(
+                  'Relationship Type',
+                  user.whatAmILookingFor.relationshipType,
+                )}
+              {user.whatAmILookingFor.communicationStyle &&
+                renderInfoItem(
+                  'Communication Style',
+                  user.whatAmILookingFor.communicationStyle,
+                )}
+              {user.whatAmILookingFor.physicalAttraction &&
+                renderInfoItem(
+                  'Physical Attraction',
+                  user.whatAmILookingFor.physicalAttraction,
+                )}
+              {user.whatAmILookingFor.personality &&
+                user.whatAmILookingFor.personality.length > 0 && (
+                  <>
+                    <Text style={styles.subsectionTitle}>
+                      Desired Personality Traits:
+                    </Text>
+                    {renderTags(user.whatAmILookingFor.personality)}
+                  </>
+                )}
+              {user.whatAmILookingFor.activities &&
+                user.whatAmILookingFor.activities.length > 0 && (
+                  <>
+                    <Text style={styles.subsectionTitle}>
+                      Preferred Activities:
+                    </Text>
+                    {renderTags(user.whatAmILookingFor.activities)}
+                  </>
+                )}
+              {user.whatAmILookingFor.qualities &&
+                user.whatAmILookingFor.qualities.length > 0 && (
+                  <>
+                    <Text style={styles.subsectionTitle}>
+                      Important Qualities:
+                    </Text>
+                    {renderTags(user.whatAmILookingFor.qualities)}
+                  </>
+                )}
+            </View>,
+          )}
+
+        {/* Preferences */}
+        {user.preferences &&
+          renderSection(
+            'Dating Preferences',
+            <View style={styles.preferencesContainer}>
+              <Text style={styles.preferenceText}>
+                Looking for {user.preferences.gender || 'anyone'} • Ages{' '}
+                {user.preferences.ageRange?.min || 18}-
+                {user.preferences.ageRange?.max || 99} • Within{' '}
+                {user.preferences.distance || 50} miles
+              </Text>
+            </View>,
+          )}
+
+        {/* Social Media */}
+        {user.socialMediaLinks &&
+          Object.keys(user.socialMediaLinks).length > 0 &&
+          renderSection(
+            'Social Media',
+            <View style={styles.socialContainer}>
+              {Object.entries(user.socialMediaLinks).map(([platform, url]) => (
+                <TouchableOpacity key={platform} style={styles.socialButton}>
+                  <Ionicons
+                    name={
+                      platform === 'instagram'
+                        ? 'logo-instagram'
+                        : platform === 'facebook'
+                        ? 'logo-facebook'
+                        : platform === 'linkedin'
+                        ? 'logo-linkedin'
+                        : platform === 'twitter'
+                        ? 'logo-twitter'
+                        : 'link-outline'
+                    }
+                    size={20}
+                    color="#4F0D50"
+                  />
+                  <Text style={styles.socialText}>{platform}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>,
+          )}
+
+        {/* Account Status */}
+        {(user.accountStatus || user.subscription || user.joinedDate) &&
+          renderSection(
+            'Account Information',
+            <View>
+              {user.accountStatus &&
+                renderInfoItem('Account Status', user.accountStatus)}
+              {user.subscription &&
+                renderInfoItem('Subscription', user.subscription)}
+              {user.joinedDate &&
+                renderInfoItem(
+                  'Joined',
+                  new Date(user.joinedDate).toLocaleDateString(),
+                )}
+              {user.lastOnline &&
+                renderInfoItem(
+                  'Last Online',
+                  new Date(user.lastOnline).toLocaleString(),
+                )}
+              {user.isEmailVerified !== undefined &&
+                renderInfoItem(
+                  'Email Verified',
+                  user.isEmailVerified ? 'Yes' : 'No',
+                )}
+              {user.isPhoneVerified !== undefined &&
+                renderInfoItem(
+                  'Phone Verified',
+                  user.isPhoneVerified ? 'Yes' : 'No',
+                )}
+            </View>,
+          )}
+      </ScrollView>
+
+      <View
+        style={{
+          backgroundColor: '#ffffff39',
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: 5,
+          borderRadius: 100,
+          alignSelf: 'center',
+          marginTop: 10,
+          width: '60%',
+          paddingHorizontal: 20,
+          paddingVertical: 15,
+          zIndex: 9999,
+          position: 'absolute',
+          bottom: 30,
+        }}
+      >
+        <TouchableOpacity
+          onPress={handleDislike}
+          style={{
+            width: 40,
+            height: 40,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <SimpleLineIcons name="dislike" size={22} color={'white'} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={{
+            width: 40,
+            height: 40,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          onPress={handleLike}
+        >
+          <Ionicons name="heart-outline" size={30} color={'white'} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={{
+            width: 40,
+            height: 40,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          // onPress={handleLike}
+        >
+          <Entypo name="dots-three-horizontal" size={30} color={'white'} />
+        </TouchableOpacity>
       </View>
-
-      {/* About */}
-      {user.about &&
-        renderSection(
-          'About Me',
-          <Text style={styles.aboutText}>{user.about}</Text>,
-        )}
-
-      {/* Description */}
-      {user.description &&
-        renderSection(
-          'Description',
-          <Text style={styles.descriptionText}>{user.description}</Text>,
-        )}
-
-      {/* Personal Details */}
-      {renderSection(
-        'Personal Details',
-        <View>
-          {user.occupation && renderInfoItem('Occupation', user.occupation)}
-          {user.education && renderInfoItem('Education', user.education)}
-          {user.height && renderInfoItem('Height', user.height)}
-          {user.bodyType && renderInfoItem('Body Type', user.bodyType)}
-          {user.smokingStatus && renderInfoItem('Smoking', user.smokingStatus)}
-          {user.drinkingStatus &&
-            renderInfoItem('Drinking', user.drinkingStatus)}
-          {user.religion && renderInfoItem('Religion', user.religion)}
-          {user.politicalViews &&
-            renderInfoItem('Political Views', user.politicalViews)}
-        </View>,
-      )}
-
-      {/* Contact Info */}
-      {renderSection(
-        'Contact Information',
-        <View>
-          {user.email && renderInfoItem('Email', user.email)}
-          {user.phone && renderInfoItem('Phone', user.phone)}
-          {user.location &&
-            renderInfoItem(
-              'Location',
-              `${user.location.city || ''}, ${user.location.state || ''}`,
-            )}
-        </View>,
-      )}
-
-      {/* Interests */}
-      {user.interests &&
-        user.interests.length > 0 &&
-        renderSection('Interests', renderTags(user.interests))}
-
-      {/* Strengths */}
-      {user.strengths &&
-        user.strengths.length > 0 &&
-        renderSection('Strengths', renderTags(user.strengths))}
-
-      {/* Languages */}
-      {user.languages &&
-        user.languages.length > 0 &&
-        renderSection('Languages', renderTags(user.languages))}
-
-      {/* Looking For */}
-      {user.whatAmILookingFor &&
-        renderSection(
-          "What I'm Looking For",
-          <View>
-            {user.whatAmILookingFor.relationshipType &&
-              renderInfoItem(
-                'Relationship Type',
-                user.whatAmILookingFor.relationshipType,
-              )}
-            {user.whatAmILookingFor.communicationStyle &&
-              renderInfoItem(
-                'Communication Style',
-                user.whatAmILookingFor.communicationStyle,
-              )}
-            {user.whatAmILookingFor.physicalAttraction &&
-              renderInfoItem(
-                'Physical Attraction',
-                user.whatAmILookingFor.physicalAttraction,
-              )}
-            {user.whatAmILookingFor.personality &&
-              user.whatAmILookingFor.personality.length > 0 && (
-                <>
-                  <Text style={styles.subsectionTitle}>
-                    Desired Personality Traits:
-                  </Text>
-                  {renderTags(user.whatAmILookingFor.personality)}
-                </>
-              )}
-            {user.whatAmILookingFor.activities &&
-              user.whatAmILookingFor.activities.length > 0 && (
-                <>
-                  <Text style={styles.subsectionTitle}>
-                    Preferred Activities:
-                  </Text>
-                  {renderTags(user.whatAmILookingFor.activities)}
-                </>
-              )}
-            {user.whatAmILookingFor.qualities &&
-              user.whatAmILookingFor.qualities.length > 0 && (
-                <>
-                  <Text style={styles.subsectionTitle}>
-                    Important Qualities:
-                  </Text>
-                  {renderTags(user.whatAmILookingFor.qualities)}
-                </>
-              )}
-          </View>,
-        )}
-
-      {/* Preferences */}
-      {user.preferences &&
-        renderSection(
-          'Dating Preferences',
-          <View style={styles.preferencesContainer}>
-            <Text style={styles.preferenceText}>
-              Looking for {user.preferences.gender || 'anyone'} • Ages{' '}
-              {user.preferences.ageRange?.min || 18}-
-              {user.preferences.ageRange?.max || 99} • Within{' '}
-              {user.preferences.distance || 50} miles
-            </Text>
-          </View>,
-        )}
-
-      {/* Social Media */}
-      {user.socialMediaLinks &&
-        Object.keys(user.socialMediaLinks).length > 0 &&
-        renderSection(
-          'Social Media',
-          <View style={styles.socialContainer}>
-            {Object.entries(user.socialMediaLinks).map(([platform, url]) => (
-              <TouchableOpacity key={platform} style={styles.socialButton}>
-                <Ionicons
-                  name={
-                    platform === 'instagram'
-                      ? 'logo-instagram'
-                      : platform === 'facebook'
-                      ? 'logo-facebook'
-                      : platform === 'linkedin'
-                      ? 'logo-linkedin'
-                      : platform === 'twitter'
-                      ? 'logo-twitter'
-                      : 'link-outline'
-                  }
-                  size={20}
-                  color="#4F0D50"
-                />
-                <Text style={styles.socialText}>{platform}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>,
-        )}
-
-      {/* Account Status */}
-      {(user.accountStatus || user.subscription || user.joinedDate) &&
-        renderSection(
-          'Account Information',
-          <View>
-            {user.accountStatus &&
-              renderInfoItem('Account Status', user.accountStatus)}
-            {user.subscription &&
-              renderInfoItem('Subscription', user.subscription)}
-            {user.joinedDate &&
-              renderInfoItem(
-                'Joined',
-                new Date(user.joinedDate).toLocaleDateString(),
-              )}
-            {user.lastOnline &&
-              renderInfoItem(
-                'Last Online',
-                new Date(user.lastOnline).toLocaleString(),
-              )}
-            {user.isEmailVerified !== undefined &&
-              renderInfoItem(
-                'Email Verified',
-                user.isEmailVerified ? 'Yes' : 'No',
-              )}
-            {user.isPhoneVerified !== undefined &&
-              renderInfoItem(
-                'Phone Verified',
-                user.isPhoneVerified ? 'Yes' : 'No',
-              )}
-          </View>,
-        )}
-    </ScrollView>
+    </>
   );
 
   return (
@@ -386,6 +442,7 @@ const UserDetails = ({ route, navigation }: any) => {
               width: '60%',
               paddingHorizontal: 20,
               paddingVertical: 15,
+              zIndex: 9999,
             }}
           >
             <TouchableOpacity
@@ -417,7 +474,7 @@ const UserDetails = ({ route, navigation }: any) => {
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
-              onPress={handleLike}
+              // onPress={handleLike}
             >
               <Entypo name="dots-three-horizontal" size={30} color={'white'} />
             </TouchableOpacity>

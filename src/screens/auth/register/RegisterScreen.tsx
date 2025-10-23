@@ -23,7 +23,7 @@ const questions = [
     id: 'gender',
     question: 'Sex',
     type: 'radio',
-    options: ['Male', 'Female', 'Prefer not to say'],
+    options: ['Male', 'Female', 'Others'],
     required: true,
   },
 ];
@@ -236,7 +236,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 12,
     paddingVertical: 20,
-    elevation: 3,
     marginTop: 20,
   },
   question: { marginBottom: 20 },
