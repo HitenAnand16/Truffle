@@ -6,464 +6,549 @@ import {
   ScrollView,
   TouchableOpacity,
   Dimensions,
+  ImageBackground,
 } from 'react-native';
-import { OptimizedImage, OptimizedImageBackground } from '../../components/OptimizedImage';
+import {
+  OptimizedImage,
+  OptimizedImageBackground,
+} from '../../components/OptimizedImage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import SimpleLineIcons from 'react-native-vector-icons/SimpleLineIcons';
+import Entypo from 'react-native-vector-icons/Entypo';
+import LinearGradient from 'react-native-linear-gradient';
 import { currentUser } from '../../../user';
+import { userProfileStyles } from '../../styles/userProfileStyles';
 
 const { width, height } = Dimensions.get('window');
 
 const UserProfileScreen = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [viewMode, setViewMode] = useState<'buttons' | 'view' | 'edit'>(
+    'buttons',
+  );
 
   // All images (profile + additional)
-  const allImages = [currentUser.profilePicture, ...(currentUser.additionalPhotos || [])];
+  const allImages = [
+    currentUser.profilePicture,
+    ...(currentUser.additionalPhotos || []),
+  ];
 
   // Navigate through images
   const nextImage = useCallback(() => {
-    setCurrentImageIndex((prev) => (prev + 1) % allImages.length);
+    setCurrentImageIndex(prev => (prev + 1) % allImages.length);
   }, [allImages.length]);
 
   const prevImage = useCallback(() => {
-    setCurrentImageIndex((prev) => (prev - 1 + allImages.length) % allImages.length);
+    setCurrentImageIndex(
+      prev => (prev - 1 + allImages.length) % allImages.length,
+    );
   }, [allImages.length]);
   const renderSection = (title: string, content: React.ReactNode) => (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+    <View style={userProfileStyles.section}>
+      <Text style={userProfileStyles.sectionTitle}>{title}</Text>
       {content}
     </View>
   );
 
   const renderInfoItem = (label: string, value: string | number) => (
-    <View style={styles.infoItem}>
-      <Text style={styles.infoLabel}>{label}:</Text>
-      <Text style={styles.infoValue}>{value}</Text>
+    <View style={userProfileStyles.infoItem}>
+      <Text style={userProfileStyles.infoLabel}>{label}:</Text>
+      <Text style={userProfileStyles.infoValue}>{value}</Text>
     </View>
   );
 
   const renderTags = (items: string[]) => {
     return (
-      <View style={styles.tagsContainer}>
+      <View style={userProfileStyles.tagsContainer}>
         {items.map((item, index) => (
-          <View key={index} style={styles.tag}>
-            <Text style={styles.tagText}>{item}</Text>
+          <View key={index} style={userProfileStyles.tag}>
+            <Text style={userProfileStyles.tagText}>{item}</Text>
           </View>
         ))}
       </View>
     );
   };
 
-  return (
-    <View style={styles.container}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Main Image Section */}
-        <View style={styles.imageContainer}>
-          <OptimizedImageBackground
-            source={{ uri: allImages[currentImageIndex] }}
-            style={styles.backgroundImage}
-            resizeMode="cover"
+  // Render buttons screen
+  const renderButtonsScreen = () => (
+    <OptimizedImageBackground
+      source={{ uri: currentUser.profilePicture }}
+      style={userProfileStyles.fullScreenBackground}
+      resizeMode="cover"
+      blurRadius={17}
+    >
+      <View style={styles.centerContent}>
+        <Text
+          style={{
+            fontSize: 24,
+            fontWeight: 'bold',
+            color: 'white',
+            marginBottom: 20,
+            marginLeft: 20,
+          }}
+        >
+          Profile
+        </Text>
+        <ImageBackground
+          source={{ uri: currentUser.profilePicture }}
+          resizeMode="cover"
+          imageStyle={{ borderRadius: 43 }}
+          style={styles.profileBackground}
+        >
+          <LinearGradient
+            colors={['transparent', '#0000009f']}
+            style={styles.buttonsContainer}
           >
-            {/* Image navigation dots */}
-            <View style={styles.imageIndicators}>
+            <View style={styles.buttonsSection}>
+              <View style={styles.userInfoContainer}>
+                <Text style={styles.overlayName}>
+                  {currentUser.firstName}, {currentUser.age}
+                </Text>
+                <Text style={styles.overlayLocation}>
+                  {currentUser.location.city}
+                </Text>
+
+                {/* Action Buttons */}
+                <View style={styles.actionButtonsContainer}>
+                  <TouchableOpacity
+                    style={styles.actionButton}
+                    onPress={() => setViewMode('edit')}
+                  >
+                    <Text style={styles.actionButtonText}>Edit Profile</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.actionButton}
+                    onPress={() => setViewMode('view')}
+                  >
+                    <Text style={styles.actionButtonText}>View Profile</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </LinearGradient>
+        </ImageBackground>
+      </View>
+    </OptimizedImageBackground>
+  );
+
+  // Render view profile screen (same as userDetail.tsx)
+  const renderViewProfileScreen = () => (
+    <View style={userProfileStyles.container}>
+      <OptimizedImageBackground
+        source={{ uri: allImages[currentImageIndex] }}
+        style={userProfileStyles.fullScreenBackground}
+        resizeMode="cover"
+      >
+        {/* Fixed Header Section with Navigation */}
+        <View style={userProfileStyles.headerSection}>
+          {/* Back button */}
+          <TouchableOpacity
+            onPress={() => setViewMode('buttons')}
+            style={userProfileStyles.backButton}
+          >
+            <Ionicons name="chevron-back" size={30} color={'white'} />
+          </TouchableOpacity>
+
+          {/* Image navigation dots */}
+          {allImages.length > 1 && (
+            <View style={userProfileStyles.imageIndicators}>
               {allImages.map((_, index) => (
                 <View
-                  key={index}
+                  key={`indicator-${index}`}
                   style={[
-                    styles.indicator,
-                    index === currentImageIndex && styles.activeIndicator,
+                    userProfileStyles.indicator,
+                    index === currentImageIndex && userProfileStyles.activeIndicator,
                   ]}
                 />
               ))}
             </View>
+          )}
 
-            {/* Left/Right tap areas for image navigation */}
-            <TouchableOpacity style={styles.leftTapArea} onPress={prevImage} />
-            <TouchableOpacity style={styles.rightTapArea} onPress={nextImage} />
-
-            {/* Basic info overlay at bottom with blur effect */}
-            <View style={styles.imageOverlay}>
-              <View style={styles.blurContainer}>
-                <Text style={styles.overlayName}>
-                  {currentUser.firstName} {currentUser.lastName}
-                </Text>
-                <Text style={styles.overlayAge}>{currentUser.age} years old</Text>
-                <View style={styles.modalBadges}>
-                  {currentUser.isVerified && (
-                    <View style={styles.verifiedBadge}>
-                      <Ionicons name="checkmark-circle" size={16} color="#4CAF50" />
-                      <Text style={styles.verifiedText}>Verified</Text>
-                    </View>
-                  )}
-                  <View style={styles.subscriptionBadge}>
-                    <Text style={styles.subscriptionText}>{currentUser.subscription}</Text>
-                  </View>
-                </View>
-              </View>
-            </View>
-          </OptimizedImageBackground>
+          {/* Left/Right tap areas for image navigation */}
+          {allImages.length > 1 && (
+            <>
+              <TouchableOpacity
+                style={userProfileStyles.leftTapArea}
+                onPress={prevImage}
+              />
+              <TouchableOpacity
+                style={userProfileStyles.rightTapArea}
+                onPress={nextImage}
+              />
+            </>
+          )}
         </View>
 
-        {/* Content Sections */}
-        <View style={styles.contentContainer}>
-          {/* Stats */}
-          {renderSection('Profile Stats', 
-            <View style={styles.statsContainer}>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{currentUser.likes}</Text>
-                <Text style={styles.statLabel}>Likes</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{currentUser.matches}</Text>
-                <Text style={styles.statLabel}>Matches</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{currentUser.views}</Text>
-                <Text style={styles.statLabel}>Views</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{currentUser.profileCompleteness}%</Text>
-                <Text style={styles.statLabel}>Complete</Text>
-              </View>
-            </View>
-          )}
+        <ScrollView
+          style={userProfileStyles.scrollView}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* First screen is just the image - add empty space equal to screen height minus bottom section */}
+          <View style={userProfileStyles.firstScreenSpacer} />
 
-          {/* About */}
-          {renderSection('About Me', 
-            <Text style={styles.aboutText}>{currentUser.about}</Text>
-          )}
-
-          {/* Description */}
-          {renderSection('Description', 
-            <Text style={styles.descriptionText}>{currentUser.description}</Text>
-          )}
-
-          {/* Personal Details */}
-          {renderSection('Personal Details', 
-            <View>
-              {renderInfoItem('Occupation', currentUser.occupation)}
-              {renderInfoItem('Education', currentUser.education)}
-              {renderInfoItem('Height', currentUser.height)}
-              {renderInfoItem('Body Type', currentUser.bodyType)}
-              {renderInfoItem('Smoking', currentUser.smokingStatus)}
-              {renderInfoItem('Drinking', currentUser.drinkingStatus)}
-              {renderInfoItem('Religion', currentUser.religion)}
-              {renderInfoItem('Political Views', currentUser.politicalViews)}
-            </View>
-          )}
-
-          {/* Contact Info */}
-          {renderSection('Contact Information', 
-            <View>
-              {renderInfoItem('Email', currentUser.email)}
-              {renderInfoItem('Phone', currentUser.phone)}
-              {renderInfoItem('Location', `${currentUser.location.city}, ${currentUser.location.state}`)}
-            </View>
-          )}
-
-          {/* Interests */}
-          {renderSection('Interests', renderTags(currentUser.interests))}
-
-          {/* Strengths */}
-          {renderSection('Strengths', renderTags(currentUser.strengths))}
-
-          {/* Languages */}
-          {renderSection('Languages', renderTags(currentUser.languages))}
-
-          {/* Looking For */}
-          {renderSection('What I\'m Looking For', 
-            <View>
-              {renderInfoItem('Relationship Type', currentUser.whatAmILookingFor.relationshipType)}
-              {renderInfoItem('Communication Style', currentUser.whatAmILookingFor.communicationStyle)}
-              {renderInfoItem('Physical Attraction', currentUser.whatAmILookingFor.physicalAttraction)}
-              <Text style={styles.subsectionTitle}>Desired Personality Traits:</Text>
-              {renderTags(currentUser.whatAmILookingFor.personality)}
-              <Text style={styles.subsectionTitle}>Preferred Activities:</Text>
-              {renderTags(currentUser.whatAmILookingFor.activities)}
-              <Text style={styles.subsectionTitle}>Important Qualities:</Text>
-              {renderTags(currentUser.whatAmILookingFor.qualities)}
-            </View>
-          )}
-
-          {/* Preferences */}
-          {renderSection('Dating Preferences', 
-            <View style={styles.preferencesContainer}>
-              <Text style={styles.preferenceText}>
-                Looking for {currentUser.preferences.gender} • 
-                Ages {currentUser.preferences.ageRange.min}-{currentUser.preferences.ageRange.max} • 
-                Within {currentUser.preferences.distance} miles
+          {/* Bottom Action Section - scrollable */}
+          <LinearGradient
+            colors={['transparent', 'rgba(0,0,0,0.5)']}
+            style={userProfileStyles.bottomActionSection}
+          >
+            <View style={userProfileStyles.userInfoContainer}>
+              <Text style={userProfileStyles.overlayName}>
+                {currentUser.firstName} {currentUser.lastName}
               </Text>
+              <Text style={userProfileStyles.overlayAge}>{currentUser.location.city}</Text>
             </View>
-          )}
+          </LinearGradient>
 
-          {/* Social Media */}
-          {renderSection('Social Media', 
-            <View style={styles.socialContainer}>
-              {Object.entries(currentUser.socialMediaLinks).map(([platform, url]) => (
-                <TouchableOpacity key={platform} style={styles.socialButton}>
-                  <Ionicons 
-                    name={platform === 'instagram' ? 'logo-instagram' : 
-                          platform === 'facebook' ? 'logo-facebook' :
-                          platform === 'linkedin' ? 'logo-linkedin' : 
-                          platform === 'twitter' ? 'logo-twitter' : 'link-outline'} 
-                    size={20} 
-                    color="#4F0D50" 
-                  />
-                  <Text style={styles.socialText}>{platform}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
+          {/* Content Sections with Blur Background */}
+          <View style={userProfileStyles.contentContainer}>
+            {/* About */}
+            {currentUser.about &&
+              renderSection(
+                'About Me',
+                <Text style={userProfileStyles.aboutText}>{currentUser.about}</Text>,
+              )}
 
-          {/* Account Status */}
-          {renderSection('Account Information', 
-            <View>
-              {renderInfoItem('Account Status', currentUser.accountStatus)}
-              {renderInfoItem('Subscription', currentUser.subscription)}
-              {renderInfoItem('Joined', new Date(currentUser.joinedDate).toLocaleDateString())}
-              {renderInfoItem('Last Online', new Date(currentUser.lastOnline).toLocaleString())}
-              {renderInfoItem('Email Verified', currentUser.isEmailVerified ? 'Yes' : 'No')}
-              {renderInfoItem('Phone Verified', currentUser.isPhoneVerified ? 'Yes' : 'No')}
-            </View>
-          )}
-        </View>
-      </ScrollView>
+            {/* Description */}
+            {currentUser.description &&
+              renderSection(
+                'Description',
+                <Text style={userProfileStyles.descriptionText}>
+                  {currentUser.description}
+                </Text>,
+              )}
+
+            {/* Personal Details */}
+            {renderSection(
+              'Personal Details',
+              <View>
+                {currentUser.occupation &&
+                  renderInfoItem('Occupation', currentUser.occupation)}
+                {currentUser.education &&
+                  renderInfoItem('Education', currentUser.education)}
+                {currentUser.height &&
+                  renderInfoItem('Height', currentUser.height)}
+                {currentUser.bodyType &&
+                  renderInfoItem('Body Type', currentUser.bodyType)}
+                {currentUser.smokingStatus &&
+                  renderInfoItem('Smoking', currentUser.smokingStatus)}
+                {currentUser.drinkingStatus &&
+                  renderInfoItem('Drinking', currentUser.drinkingStatus)}
+                {currentUser.religion &&
+                  renderInfoItem('Religion', currentUser.religion)}
+                {currentUser.politicalViews &&
+                  renderInfoItem('Political Views', currentUser.politicalViews)}
+              </View>,
+            )}
+
+            {/* Contact Info */}
+            {renderSection(
+              'Contact Information',
+              <View>
+                {currentUser.email &&
+                  renderInfoItem('Email', currentUser.email)}
+                {currentUser.phone &&
+                  renderInfoItem('Phone', currentUser.phone)}
+                {currentUser.location &&
+                  renderInfoItem(
+                    'Location',
+                    `${currentUser.location.city || ''}, ${
+                      currentUser.location.state || ''
+                    }`,
+                  )}
+              </View>,
+            )}
+
+            {/* Interests */}
+            {currentUser.interests &&
+              currentUser.interests.length > 0 &&
+              renderSection('Interests', renderTags(currentUser.interests))}
+
+            {/* Strengths */}
+            {currentUser.strengths &&
+              currentUser.strengths.length > 0 &&
+              renderSection('Strengths', renderTags(currentUser.strengths))}
+
+            {/* Languages */}
+            {currentUser.languages &&
+              currentUser.languages.length > 0 &&
+              renderSection('Languages', renderTags(currentUser.languages))}
+
+            {/* Looking For */}
+            {currentUser.whatAmILookingFor &&
+              renderSection(
+                "What I'm Looking For",
+                <View>
+                  {currentUser.whatAmILookingFor.relationshipType &&
+                    renderInfoItem(
+                      'Relationship Type',
+                      currentUser.whatAmILookingFor.relationshipType,
+                    )}
+                  {currentUser.whatAmILookingFor.communicationStyle &&
+                    renderInfoItem(
+                      'Communication Style',
+                      currentUser.whatAmILookingFor.communicationStyle,
+                    )}
+                  {currentUser.whatAmILookingFor.physicalAttraction &&
+                    renderInfoItem(
+                      'Physical Attraction',
+                      currentUser.whatAmILookingFor.physicalAttraction,
+                    )}
+                  {currentUser.whatAmILookingFor.personality &&
+                    currentUser.whatAmILookingFor.personality.length > 0 && (
+                      <>
+                        <Text style={userProfileStyles.subsectionTitle}>
+                          Desired Personality Traits:
+                        </Text>
+                        {renderTags(currentUser.whatAmILookingFor.personality)}
+                      </>
+                    )}
+                  {currentUser.whatAmILookingFor.activities &&
+                    currentUser.whatAmILookingFor.activities.length > 0 && (
+                      <>
+                        <Text style={userProfileStyles.subsectionTitle}>
+                          Preferred Activities:
+                        </Text>
+                        {renderTags(currentUser.whatAmILookingFor.activities)}
+                      </>
+                    )}
+                  {currentUser.whatAmILookingFor.qualities &&
+                    currentUser.whatAmILookingFor.qualities.length > 0 && (
+                      <>
+                        <Text style={userProfileStyles.subsectionTitle}>
+                          Important Qualities:
+                        </Text>
+                        {renderTags(currentUser.whatAmILookingFor.qualities)}
+                      </>
+                    )}
+                </View>,
+              )}
+
+            {/* Preferences */}
+            {currentUser.preferences &&
+              renderSection(
+                'Dating Preferences',
+                <View style={userProfileStyles.preferencesContainer}>
+                  <Text style={userProfileStyles.preferenceText}>
+                    Looking for {currentUser.preferences.gender || 'anyone'} •
+                    Ages {currentUser.preferences.ageRange?.min || 18}-
+                    {currentUser.preferences.ageRange?.max || 99} • Within{' '}
+                    {currentUser.preferences.distance || 50} miles
+                  </Text>
+                </View>,
+              )}
+
+            {/* Social Media */}
+            {currentUser.socialMediaLinks &&
+              Object.keys(currentUser.socialMediaLinks).length > 0 &&
+              renderSection(
+                'Social Media',
+                <View style={userProfileStyles.socialContainer}>
+                  {Object.entries(currentUser.socialMediaLinks).map(
+                    ([platform, url]) => (
+                      <TouchableOpacity
+                        key={platform}
+                        style={userProfileStyles.socialButton}
+                      >
+                        <Ionicons
+                          name={
+                            platform === 'instagram'
+                              ? 'logo-instagram'
+                              : platform === 'facebook'
+                              ? 'logo-facebook'
+                              : platform === 'linkedin'
+                              ? 'logo-linkedin'
+                              : platform === 'twitter'
+                              ? 'logo-twitter'
+                              : 'link-outline'
+                          }
+                          size={20}
+                          color="#fff"
+                        />
+                        <Text style={userProfileStyles.socialText}>{platform}</Text>
+                      </TouchableOpacity>
+                    ),
+                  )}
+                </View>,
+              )}
+
+            {/* Account Status */}
+            {(currentUser.accountStatus ||
+              currentUser.subscription ||
+              currentUser.joinedDate) &&
+              renderSection(
+                'Account Information',
+                <View>
+                  {currentUser.accountStatus &&
+                    renderInfoItem('Account Status', currentUser.accountStatus)}
+                  {currentUser.subscription &&
+                    renderInfoItem('Subscription', currentUser.subscription)}
+                  {currentUser.joinedDate &&
+                    renderInfoItem(
+                      'Joined',
+                      new Date(currentUser.joinedDate).toLocaleDateString(),
+                    )}
+                  {currentUser.lastOnline &&
+                    renderInfoItem(
+                      'Last Online',
+                      new Date(currentUser.lastOnline).toLocaleString(),
+                    )}
+                  {currentUser.isEmailVerified !== undefined &&
+                    renderInfoItem(
+                      'Email Verified',
+                      currentUser.isEmailVerified ? 'Yes' : 'No',
+                    )}
+                  {currentUser.isPhoneVerified !== undefined &&
+                    renderInfoItem(
+                      'Phone Verified',
+                      currentUser.isPhoneVerified ? 'Yes' : 'No',
+                    )}
+                </View>,
+              )}
+          </View>
+        </ScrollView>
+      </OptimizedImageBackground>
     </View>
   );
+
+  // Render edit profile screen (placeholder for now)
+  const renderEditProfileScreen = () => (
+    <View style={userProfileStyles.container}>
+      <SafeAreaView style={styles.editContainer}>
+        <View style={styles.editHeader}>
+          <TouchableOpacity onPress={() => setViewMode('buttons')}>
+            <Ionicons name="chevron-back" size={30} color="#333" />
+          </TouchableOpacity>
+          <Text style={styles.editTitle}>Edit Profile</Text>
+          <TouchableOpacity>
+            <Text style={styles.saveText}>Save</Text>
+          </TouchableOpacity>
+        </View>
+        <ScrollView style={styles.editContent}>
+          <Text style={styles.placeholderText}>
+            Edit Profile functionality coming soon...
+          </Text>
+        </ScrollView>
+      </SafeAreaView>
+    </View>
+  );
+
+  // Main render based on view mode
+  if (viewMode === 'view') {
+    return renderViewProfileScreen();
+  } else if (viewMode === 'edit') {
+    return renderEditProfileScreen();
+  } else {
+    return renderButtonsScreen();
+  }
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  imageContainer: {
-    height: height * 0.6,
-    position: 'relative',
-  },
-  backgroundImage: {
-    flex: 1,
-    width: width,
+  // Buttons screen styles - specific to this component
+  centerContent: {
+    width: '100%',
     height: '100%',
-  },
-  imageIndicators: {
-    position: 'absolute',
-    top: 60,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
     justifyContent: 'center',
-    zIndex: 10,
+    paddingHorizontal: 30,
   },
-  indicator: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
-    marginHorizontal: 4,
+  profileBackground: {
+    // width: '100%',
+    // borderRadius: 40,
+    // alignSelf: 'flex-end',
+    // justifyContent: 'flex-end',
   },
-  activeIndicator: {
-    backgroundColor: 'white',
+  buttonsContainer: {
+    width: '100%',
+    // paddingVertical: 20,
+    alignItems: 'center',
+    marginTop: '130%',
+    overflow: 'hidden',
+    borderBottomLeftRadius: 43,
+    borderBottomRightRadius: 43,
   },
-  leftTapArea: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: '40%',
-    zIndex: 5,
-  },
-  rightTapArea: {
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    bottom: 0,
-    width: '40%',
-    zIndex: 5,
-  },
-  imageOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 150,
-    justifyContent: 'flex-end',
-    paddingBottom: 20,
-  },
-  blurContainer: {
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    marginHorizontal: 20,
-    borderRadius: 15,
-    padding: 20,
+  buttonsSection: {
     alignItems: 'center',
   },
+  userInfoContainer: {
+    // alignItems: 'center',
+    borderRadius: 20,
+    padding: 20,
+    marginHorizontal: 20,
+    width: width - 40,
+  },
   overlayName: {
-    fontSize: 28,
+    fontSize: 20,
     fontWeight: 'bold',
     color: 'white',
     marginBottom: 5,
-    textAlign: 'center',
   },
   overlayAge: {
-    fontSize: 18,
+    fontSize: 20,
     color: 'rgba(255, 255, 255, 0.9)',
-    marginBottom: 10,
+    marginBottom: 5,
+    textShadowColor: 'rgba(0, 0, 0, 0.7)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
-  modalBadges: {
+  overlayLocation: {
+    fontSize: 15,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginBottom: 20,
+    textShadowColor: 'rgba(0, 0, 0, 0.7)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+  },
+  actionButtonsContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
     gap: 10,
+    alignSelf: 'center',
   },
-  verifiedBadge: {
+  actionButton: {
+    backgroundColor: '#D9D9D9', // More opaque background
+    paddingHorizontal: 20,
+    paddingVertical: 5,
+    borderRadius: 25,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(232, 245, 232, 0.9)',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 15,
-    gap: 5,
   },
-  verifiedText: {
+  actionButtonText: {
+    color: 'black',
     fontSize: 12,
-    color: '#4CAF50',
     fontWeight: '600',
   },
-  subscriptionBadge: {
-    backgroundColor: 'rgba(79, 13, 80, 0.9)',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 15,
-  },
-  subscriptionText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  contentContainer: {
-    padding: 20,
+  // Edit profile screen styles
+  editContainer: {
+    flex: 1,
     backgroundColor: '#fff',
   },
-  section: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+  editHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
   },
-  sectionTitle: {
+  editTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 12,
   },
-  subsectionTitle: {
+  saveText: {
     fontSize: 16,
+    color: '#4F0D50',
     fontWeight: '600',
-    color: '#333',
-    marginTop: 12,
-    marginBottom: 8,
   },
-  statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
-    padding: 16,
-  },
-  statItem: {
-    alignItems: 'center',
-  },
-  statNumber: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#4F0D50',
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 4,
-  },
-  aboutText: {
-    fontSize: 16,
-    color: '#333',
-    lineHeight: 24,
-  },
-  descriptionText: {
-    fontSize: 16,
-    color: '#666',
-    lineHeight: 24,
-  },
-  infoItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  infoLabel: {
-    fontSize: 16,
-    color: '#666',
-    fontWeight: '500',
+  editContent: {
     flex: 1,
+    padding: 20,
   },
-  infoValue: {
+  placeholderText: {
     fontSize: 16,
-    color: '#333',
-    flex: 2,
-    textAlign: 'right',
-  },
-  tagsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  tag: {
-    backgroundColor: '#4F0D50',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  tagText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  preferencesContainer: {
-    backgroundColor: '#f8f9fa',
-    padding: 12,
-    borderRadius: 8,
-  },
-  preferenceText: {
-    fontSize: 16,
-    color: '#333',
+    color: '#666',
     textAlign: 'center',
-  },
-  socialContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  socialButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f8f9fa',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    gap: 6,
-  },
-  socialText: {
-    fontSize: 14,
-    color: '#4F0D50',
-    fontWeight: '500',
-    textTransform: 'capitalize',
+    marginTop: 50,
   },
 });
 

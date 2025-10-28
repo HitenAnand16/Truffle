@@ -13,6 +13,7 @@ import SimpleLineIcons from 'react-native-vector-icons/SimpleLineIcons';
 import Entypo from 'react-native-vector-icons/Entypo';
 import LinearGradient from 'react-native-linear-gradient';
 import { useUserActions } from '../../context/UserActionsContext';
+import { userProfileStyles } from '../../styles/userProfileStyles';
 
 const { width, height } = Dimensions.get('window');
 
@@ -59,56 +60,56 @@ const UserDetails = ({ route, navigation }: any) => {
   }, [addDislikedUser, user.id, navigation]);
 
   const renderSection = (title: string, content: React.ReactNode) => (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+    <View style={userProfileStyles.section}>
+      <Text style={userProfileStyles.sectionTitle}>{title}</Text>
       {content}
     </View>
   );
 
   const renderInfoItem = (label: string, value: string | number) => (
-    <View style={styles.infoItem}>
-      <Text style={styles.infoLabel}>{label}:</Text>
-      <Text style={styles.infoValue}>{value}</Text>
+    <View style={userProfileStyles.infoItem}>
+      <Text style={userProfileStyles.infoLabel}>{label}:</Text>
+      <Text style={userProfileStyles.infoValue}>{value}</Text>
     </View>
   );
 
   const renderTags = (items: string[]) => (
-    <View style={styles.tagsContainer}>
+    <View style={userProfileStyles.tagsContainer}>
       {items.map((item, index) => (
-        <View style={styles.tag} key={`tag-${index}`} {...({} as any)}>
-          <Text style={styles.tagText}>{item}</Text>
+        <View style={userProfileStyles.tag} key={`tag-${index}`} {...({} as any)}>
+          <Text style={userProfileStyles.tagText}>{item}</Text>
         </View>
       ))}
     </View>
   );
 
   return (
-    <View style={styles.container}>
+    <View style={userProfileStyles.container}>
       {/* Full Screen Background Image */}
       <OptimizedImageBackground
         source={{ uri: allImages[currentImageIndex] }}
-        style={styles.fullScreenBackground}
+        style={userProfileStyles.fullScreenBackground}
         resizeMode="cover"
       >
         {/* Fixed Header Section with Navigation */}
-        <View style={styles.headerSection}>
+        <View style={userProfileStyles.headerSection}>
           {/* Back button */}
           <TouchableOpacity
             onPress={() => navigation.goBack()}
-            style={styles.backButton}
+            style={userProfileStyles.backButton}
           >
             <Ionicons name="chevron-back" size={30} color={'white'} />
           </TouchableOpacity>
 
           {/* Image navigation dots */}
           {allImages.length > 1 && (
-            <View style={styles.imageIndicators}>
+            <View style={userProfileStyles.imageIndicators}>
               {allImages.map((_, index) => (
                 <View
                   key={`indicator-${index}`}
                   style={[
-                    styles.indicator,
-                    index === currentImageIndex && styles.activeIndicator,
+                    userProfileStyles.indicator,
+                    index === currentImageIndex && userProfileStyles.activeIndicator,
                   ]}
                 />
               ))}
@@ -119,11 +120,11 @@ const UserDetails = ({ route, navigation }: any) => {
           {allImages.length > 1 && (
             <>
               <TouchableOpacity
-                style={styles.leftTapArea}
+                style={userProfileStyles.leftTapArea}
                 onPress={prevImage}
               />
               <TouchableOpacity
-                style={styles.rightTapArea}
+                style={userProfileStyles.rightTapArea}
                 onPress={nextImage}
               />
             </>
@@ -131,39 +132,39 @@ const UserDetails = ({ route, navigation }: any) => {
         </View>
 
         <ScrollView
-          style={styles.scrollView}
+          style={userProfileStyles.scrollView}
           showsVerticalScrollIndicator={false}
         >
           {/* First screen is just the image - add empty space equal to screen height minus bottom section */}
-          <View style={styles.firstScreenSpacer} />
+          <View style={userProfileStyles.firstScreenSpacer} />
 
           {/* Bottom Action Section - scrollable */}
           <LinearGradient
             colors={['transparent', 'rgba(0,0,0,0.5)']}
-            style={styles.bottomActionSection}
+            style={userProfileStyles.bottomActionSection}
           >
-            <View style={styles.userInfoContainer}>
-              <Text style={styles.overlayName}>
+            <View style={userProfileStyles.userInfoContainer}>
+              <Text style={userProfileStyles.overlayName}>
                 {user.firstName}, {user.age}
               </Text>
-              <Text style={styles.overlayAge}>{user.location.city}</Text>
+              <Text style={userProfileStyles.overlayAge}>{user.location.city}</Text>
             </View>
           </LinearGradient>
 
           {/* Content Sections with Blur Background */}
-          <View style={styles.contentContainer}>
+          <View style={userProfileStyles.contentContainer}>
             {/* About */}
             {user.about &&
               renderSection(
                 'About Me',
-                <Text style={styles.aboutText}>{user.about}</Text>,
+                <Text style={userProfileStyles.aboutText}>{user.about}</Text>,
               )}
 
             {/* Description */}
             {user.description &&
               renderSection(
                 'Description',
-                <Text style={styles.descriptionText}>{user.description}</Text>,
+                <Text style={userProfileStyles.descriptionText}>{user.description}</Text>,
               )}
 
             {/* Personal Details */}
@@ -237,7 +238,7 @@ const UserDetails = ({ route, navigation }: any) => {
                   {user.whatAmILookingFor.personality &&
                     user.whatAmILookingFor.personality.length > 0 && (
                       <>
-                        <Text style={styles.subsectionTitle}>
+                        <Text style={userProfileStyles.subsectionTitle}>
                           Desired Personality Traits:
                         </Text>
                         {renderTags(user.whatAmILookingFor.personality)}
@@ -246,7 +247,7 @@ const UserDetails = ({ route, navigation }: any) => {
                   {user.whatAmILookingFor.activities &&
                     user.whatAmILookingFor.activities.length > 0 && (
                       <>
-                        <Text style={styles.subsectionTitle}>
+                        <Text style={userProfileStyles.subsectionTitle}>
                           Preferred Activities:
                         </Text>
                         {renderTags(user.whatAmILookingFor.activities)}
@@ -255,7 +256,7 @@ const UserDetails = ({ route, navigation }: any) => {
                   {user.whatAmILookingFor.qualities &&
                     user.whatAmILookingFor.qualities.length > 0 && (
                       <>
-                        <Text style={styles.subsectionTitle}>
+                        <Text style={userProfileStyles.subsectionTitle}>
                           Important Qualities:
                         </Text>
                         {renderTags(user.whatAmILookingFor.qualities)}
@@ -268,8 +269,8 @@ const UserDetails = ({ route, navigation }: any) => {
             {user.preferences &&
               renderSection(
                 'Dating Preferences',
-                <View style={styles.preferencesContainer}>
-                  <Text style={styles.preferenceText}>
+                <View style={userProfileStyles.preferencesContainer}>
+                  <Text style={userProfileStyles.preferenceText}>
                     Looking for {user.preferences.gender || 'anyone'} • Ages{' '}
                     {user.preferences.ageRange?.min || 18}-
                     {user.preferences.ageRange?.max || 99} • Within{' '}
@@ -283,12 +284,12 @@ const UserDetails = ({ route, navigation }: any) => {
               Object.keys(user.socialMediaLinks).length > 0 &&
               renderSection(
                 'Social Media',
-                <View style={styles.socialContainer}>
+                <View style={userProfileStyles.socialContainer}>
                   {Object.entries(user.socialMediaLinks).map(
                     ([platform, url]) => (
                       <TouchableOpacity
                         key={platform}
-                        style={styles.socialButton}
+                        style={userProfileStyles.socialButton}
                       >
                         <Ionicons
                           name={
@@ -305,7 +306,7 @@ const UserDetails = ({ route, navigation }: any) => {
                           size={20}
                           color="#fff"
                         />
-                        <Text style={styles.socialText}>{platform}</Text>
+                        <Text style={userProfileStyles.socialText}>{platform}</Text>
                       </TouchableOpacity>
                     ),
                   )}
