@@ -7,6 +7,8 @@
 		<string>Ionicons.ttf</string>
 		<string>FontAwesome.ttf</string>
 		<string>Octicons.ttf</string>
+		<string>SimpleLineIcons.ttf</string>
+		<string>Entypo.ttf</string>
 		</array>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>

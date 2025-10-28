@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -27,6 +27,9 @@ const EmailVerificationScreen = ({ navigation, route }: any) => {
   const [isVerifying, setIsVerifying] = useState(false);
   const [isPhoneVerifying, setIsPhoneVerifying] = useState(false);
   const [isPhoneOtpSent, setIsPhoneOtpSent] = useState(false);
+  
+  // Ref for the hidden input
+  const hiddenInputRef = useRef<TextInput>(null);
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -455,20 +458,34 @@ const EmailVerificationScreen = ({ navigation, route }: any) => {
             </Text>
 
             <View style={styles.otpInputContainer}>
-              <View style={styles.otpContainer}>
+              <TouchableOpacity 
+                style={styles.otpContainer}
+                onPress={() => {
+                  hiddenInputRef.current?.focus();
+                }}
+                activeOpacity={1}
+              >
                 {Array(6)
                   .fill(0)
                   .map((_, index) => (
-                    <View key={index} style={styles.dashContainer}>
-                      <Text style={styles.dashText}>
-                        {otp[index] ? otp[index] : '_'}
+                    <View key={index} style={[
+                      styles.dashContainer,
+                      otp[index] ? styles.filledDash : {},
+                      index === otp.length ? styles.activeDash : {}
+                    ]}>
+                      <Text style={[
+                        styles.dashText,
+                        otp[index] ? { color: '#fff' } : {}
+                      ]}>
+                        {otp[index] ? otp[index] : ''}
                       </Text>
                     </View>
                   ))}
-              </View>
+              </TouchableOpacity>
 
-              {/* Hidden TextInput for typing */}
+              {/* Hidden TextInput that captures keyboard input */}
               <TextInput
+                ref={hiddenInputRef}
                 style={styles.hiddenInput}
                 value={otp}
                 onChangeText={(text) => {
@@ -476,7 +493,10 @@ const EmailVerificationScreen = ({ navigation, route }: any) => {
                 }}
                 keyboardType="numeric"
                 maxLength={6}
-                autoFocus
+                autoFocus={true}
+                caretHidden={true}
+                contextMenuHidden={true}
+                selectTextOnFocus={false}
               />
             </View>
 
@@ -661,6 +681,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ccc',
   },
   dashText: {
     fontSize: 18,
@@ -669,9 +691,25 @@ const styles = StyleSheet.create({
   },
   hiddenInput: {
     position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
     opacity: 0,
-    width: 1,
-    height: 1,
+    fontSize: 16,
+    textAlign: 'center',
+    color: 'transparent',
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+  },
+  filledDash: {
+    backgroundColor: '#4F0D50',
+    borderColor: '#4F0D50',
+    borderWidth: 2,
+  },
+  activeDash: {
+    borderColor: '#4F0D50',
+    borderWidth: 2,
   },
 });
 

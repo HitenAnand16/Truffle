@@ -212,7 +212,7 @@ const Settings = ({ navigation }: any) => {
             {
               flexDirection: 'row',
               justifyContent: 'space-between',
-              alignItems: 'center', 
+              alignItems: 'center',
               marginVertical: 10,
             },
           ]}
@@ -244,8 +244,8 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f0f0f0',
   },
   backButton: {
-    marginRight: 15,
     padding: 5,
+    marginBottom: 20,
   },
   title: {
     fontSize: 24,

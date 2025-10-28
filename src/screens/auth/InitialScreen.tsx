@@ -93,7 +93,7 @@ const InitialScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000', // Dark background as fallback
+    backgroundColor: '#000', // Light background for better contrast
   },
   content: {
     flex: 1,

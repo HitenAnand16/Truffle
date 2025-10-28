@@ -1,23 +1,16 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Dimensions,
   TouchableOpacity,
-  Modal,
-  Animated,
   ScrollView,
-  ImageBackground,
 } from 'react-native';
 import { OptimizedImageBackground } from '../../components/OptimizedImage';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import SimpleLineIcons from 'react-native-vector-icons/SimpleLineIcons';
 import Entypo from 'react-native-vector-icons/Entypo';
-import {
-  PanGestureHandler,
-  GestureHandlerRootView,
-} from 'react-native-gesture-handler';
 import LinearGradient from 'react-native-linear-gradient';
 import { useUserActions } from '../../context/UserActionsContext';
 
@@ -26,45 +19,12 @@ const { width, height } = Dimensions.get('window');
 const UserDetails = ({ route, navigation }: any) => {
   const { user } = route.params; // Get user data passed via navigation
   const { addLikedUser, addDislikedUser } = useUserActions();
-  const [modalVisible, setModalVisible] = useState(false);
-  const [translateY] = useState(new Animated.Value(0));
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isActionModalVisible, setIsActionModalVisible] = useState(false);
   const [actionMessage, setActionMessage] = useState('');
 
   // All images (profile + additional)
   const allImages = [user.profilePicture, ...(user.additionalPhotos || [])];
-
-  // Gesture handler for swipe up/down
-  const onGestureEvent = Animated.event(
-    [{ nativeEvent: { translationY: translateY } }],
-    { useNativeDriver: true },
-  );
-
-  // Handle gesture state change
-  const onHandlerStateChange = ({ nativeEvent }: any) => {
-    if (nativeEvent.translationY < -100) {
-      // Swipe up
-      setModalVisible(true);
-      Animated.spring(translateY, {
-        toValue: 0,
-        useNativeDriver: true,
-      }).start();
-    } else if (nativeEvent.translationY > 100 && modalVisible) {
-      // Swipe down when modal is open
-      setModalVisible(false);
-      Animated.spring(translateY, {
-        toValue: 0,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      // Reset position
-      Animated.spring(translateY, {
-        toValue: 0,
-        useNativeDriver: true,
-      }).start();
-    }
-  };
 
   // Navigate through images
   const nextImage = useCallback(() => {
@@ -122,419 +82,298 @@ const UserDetails = ({ route, navigation }: any) => {
     </View>
   );
 
-  const renderModalContent = () => (
-    <>
-      <ScrollView
-        style={styles.modalScrollView}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Header Info */}
-        <View style={styles.modalHeader}>
-          <Text style={styles.modalName}>
-            {user.firstName}, {user.age}
-          </Text>
-          <Text style={styles.modalAge}> {user.location.city} </Text>
-        </View>
-
-        {/* About */}
-        {user.about &&
-          renderSection(
-            'About Me',
-            <Text style={styles.aboutText}>{user.about}</Text>,
-          )}
-
-        {/* Description */}
-        {user.description &&
-          renderSection(
-            'Description',
-            <Text style={styles.descriptionText}>{user.description}</Text>,
-          )}
-
-        {/* Personal Details */}
-        {renderSection(
-          'Personal Details',
-          <View>
-            {user.occupation && renderInfoItem('Occupation', user.occupation)}
-            {user.education && renderInfoItem('Education', user.education)}
-            {user.height && renderInfoItem('Height', user.height)}
-            {user.bodyType && renderInfoItem('Body Type', user.bodyType)}
-            {user.smokingStatus &&
-              renderInfoItem('Smoking', user.smokingStatus)}
-            {user.drinkingStatus &&
-              renderInfoItem('Drinking', user.drinkingStatus)}
-            {user.religion && renderInfoItem('Religion', user.religion)}
-            {user.politicalViews &&
-              renderInfoItem('Political Views', user.politicalViews)}
-          </View>,
-        )}
-
-        {/* Contact Info */}
-        {renderSection(
-          'Contact Information',
-          <View>
-            {user.email && renderInfoItem('Email', user.email)}
-            {user.phone && renderInfoItem('Phone', user.phone)}
-            {user.location &&
-              renderInfoItem(
-                'Location',
-                `${user.location.city || ''}, ${user.location.state || ''}`,
-              )}
-          </View>,
-        )}
-
-        {/* Interests */}
-        {user.interests &&
-          user.interests.length > 0 &&
-          renderSection('Interests', renderTags(user.interests))}
-
-        {/* Strengths */}
-        {user.strengths &&
-          user.strengths.length > 0 &&
-          renderSection('Strengths', renderTags(user.strengths))}
-
-        {/* Languages */}
-        {user.languages &&
-          user.languages.length > 0 &&
-          renderSection('Languages', renderTags(user.languages))}
-
-        {/* Looking For */}
-        {user.whatAmILookingFor &&
-          renderSection(
-            "What I'm Looking For",
-            <View>
-              {user.whatAmILookingFor.relationshipType &&
-                renderInfoItem(
-                  'Relationship Type',
-                  user.whatAmILookingFor.relationshipType,
-                )}
-              {user.whatAmILookingFor.communicationStyle &&
-                renderInfoItem(
-                  'Communication Style',
-                  user.whatAmILookingFor.communicationStyle,
-                )}
-              {user.whatAmILookingFor.physicalAttraction &&
-                renderInfoItem(
-                  'Physical Attraction',
-                  user.whatAmILookingFor.physicalAttraction,
-                )}
-              {user.whatAmILookingFor.personality &&
-                user.whatAmILookingFor.personality.length > 0 && (
-                  <>
-                    <Text style={styles.subsectionTitle}>
-                      Desired Personality Traits:
-                    </Text>
-                    {renderTags(user.whatAmILookingFor.personality)}
-                  </>
-                )}
-              {user.whatAmILookingFor.activities &&
-                user.whatAmILookingFor.activities.length > 0 && (
-                  <>
-                    <Text style={styles.subsectionTitle}>
-                      Preferred Activities:
-                    </Text>
-                    {renderTags(user.whatAmILookingFor.activities)}
-                  </>
-                )}
-              {user.whatAmILookingFor.qualities &&
-                user.whatAmILookingFor.qualities.length > 0 && (
-                  <>
-                    <Text style={styles.subsectionTitle}>
-                      Important Qualities:
-                    </Text>
-                    {renderTags(user.whatAmILookingFor.qualities)}
-                  </>
-                )}
-            </View>,
-          )}
-
-        {/* Preferences */}
-        {user.preferences &&
-          renderSection(
-            'Dating Preferences',
-            <View style={styles.preferencesContainer}>
-              <Text style={styles.preferenceText}>
-                Looking for {user.preferences.gender || 'anyone'} • Ages{' '}
-                {user.preferences.ageRange?.min || 18}-
-                {user.preferences.ageRange?.max || 99} • Within{' '}
-                {user.preferences.distance || 50} miles
-              </Text>
-            </View>,
-          )}
-
-        {/* Social Media */}
-        {user.socialMediaLinks &&
-          Object.keys(user.socialMediaLinks).length > 0 &&
-          renderSection(
-            'Social Media',
-            <View style={styles.socialContainer}>
-              {Object.entries(user.socialMediaLinks).map(([platform, url]) => (
-                <TouchableOpacity key={platform} style={styles.socialButton}>
-                  <Ionicons
-                    name={
-                      platform === 'instagram'
-                        ? 'logo-instagram'
-                        : platform === 'facebook'
-                        ? 'logo-facebook'
-                        : platform === 'linkedin'
-                        ? 'logo-linkedin'
-                        : platform === 'twitter'
-                        ? 'logo-twitter'
-                        : 'link-outline'
-                    }
-                    size={20}
-                    color="#4F0D50"
-                  />
-                  <Text style={styles.socialText}>{platform}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>,
-          )}
-
-        {/* Account Status */}
-        {(user.accountStatus || user.subscription || user.joinedDate) &&
-          renderSection(
-            'Account Information',
-            <View>
-              {user.accountStatus &&
-                renderInfoItem('Account Status', user.accountStatus)}
-              {user.subscription &&
-                renderInfoItem('Subscription', user.subscription)}
-              {user.joinedDate &&
-                renderInfoItem(
-                  'Joined',
-                  new Date(user.joinedDate).toLocaleDateString(),
-                )}
-              {user.lastOnline &&
-                renderInfoItem(
-                  'Last Online',
-                  new Date(user.lastOnline).toLocaleString(),
-                )}
-              {user.isEmailVerified !== undefined &&
-                renderInfoItem(
-                  'Email Verified',
-                  user.isEmailVerified ? 'Yes' : 'No',
-                )}
-              {user.isPhoneVerified !== undefined &&
-                renderInfoItem(
-                  'Phone Verified',
-                  user.isPhoneVerified ? 'Yes' : 'No',
-                )}
-            </View>,
-          )}
-      </ScrollView>
-
-      <View
-        style={{
-          backgroundColor: '#ffffff39',
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: 5,
-          borderRadius: 100,
-          alignSelf: 'center',
-          marginTop: 10,
-          width: '60%',
-          paddingHorizontal: 20,
-          paddingVertical: 15,
-          zIndex: 9999,
-          position: 'absolute',
-          bottom: 30,
-        }}
-      >
-        <TouchableOpacity
-          onPress={handleDislike}
-          style={{
-            width: 40,
-            height: 40,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <SimpleLineIcons name="dislike" size={22} color={'white'} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={{
-            width: 40,
-            height: 40,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-          onPress={handleLike}
-        >
-          <Ionicons name="heart-outline" size={30} color={'white'} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={{
-            width: 40,
-            height: 40,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-          // onPress={handleLike}
-        >
-          <Entypo name="dots-three-horizontal" size={30} color={'white'} />
-        </TouchableOpacity>
-      </View>
-    </>
-  );
-
   return (
-    <GestureHandlerRootView style={styles.container}>
+    <View style={styles.container}>
+      {/* Full Screen Background Image */}
       <OptimizedImageBackground
         source={{ uri: allImages[currentImageIndex] }}
-        style={styles.backgroundImage}
+        style={styles.fullScreenBackground}
         resizeMode="cover"
       >
-        {/* Back button */}
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >
-          <Ionicons name="chevron-back" size={30} color={'white'} />
-        </TouchableOpacity>
+        {/* Fixed Header Section with Navigation */}
+        <View style={styles.headerSection}>
+          {/* Back button */}
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+          >
+            <Ionicons name="chevron-back" size={30} color={'white'} />
+          </TouchableOpacity>
 
-        {/* Image navigation dots */}
-        {allImages.length > 1 && (
-          <View style={styles.imageIndicators}>
-            {allImages.map((_, index) => {
-              const ViewComponent = View as any;
-              return (
-                <ViewComponent
+          {/* Image navigation dots */}
+          {allImages.length > 1 && (
+            <View style={styles.imageIndicators}>
+              {allImages.map((_, index) => (
+                <View
                   key={`indicator-${index}`}
                   style={[
                     styles.indicator,
                     index === currentImageIndex && styles.activeIndicator,
                   ]}
                 />
-              );
-            })}
-          </View>
-        )}
+              ))}
+            </View>
+          )}
 
-        {/* Left/Right tap areas for image navigation */}
-        {allImages.length > 1 && (
-          <>
-            <TouchableOpacity style={styles.leftTapArea} onPress={prevImage} />
-            <TouchableOpacity style={styles.rightTapArea} onPress={nextImage} />
-          </>
-        )}
+          {/* Left/Right tap areas for image navigation */}
+          {allImages.length > 1 && (
+            <>
+              <TouchableOpacity
+                style={styles.leftTapArea}
+                onPress={prevImage}
+              />
+              <TouchableOpacity
+                style={styles.rightTapArea}
+                onPress={nextImage}
+              />
+            </>
+          )}
+        </View>
 
-        {/* Basic info overlay at bottom */}
-        <LinearGradient
-          colors={['transparent', '#000000a8']}
-          style={styles.basicInfoOverlay}
+        <ScrollView
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.overlayName}>
-            {user.firstName} {user.age}
-          </Text>
-          <Text style={styles.overlayAge}>{user.location.city}</Text>
+          {/* First screen is just the image - add empty space equal to screen height minus bottom section */}
+          <View style={styles.firstScreenSpacer} />
 
-          <View
-            style={{
-              backgroundColor: '#ffffff39',
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: 5,
-              borderRadius: 100,
-              alignSelf: 'center',
-              marginTop: 10,
-              width: '60%',
-              paddingHorizontal: 20,
-              paddingVertical: 15,
-              zIndex: 9999,
-            }}
+          {/* Bottom Action Section - scrollable */}
+          <LinearGradient
+            colors={['transparent', 'rgba(0,0,0,0.5)']}
+            style={styles.bottomActionSection}
           >
+            <View style={styles.userInfoContainer}>
+              <Text style={styles.overlayName}>
+                {user.firstName}, {user.age}
+              </Text>
+              <Text style={styles.overlayAge}>{user.location.city}</Text>
+            </View>
+          </LinearGradient>
+
+          {/* Content Sections with Blur Background */}
+          <View style={styles.contentContainer}>
+            {/* About */}
+            {user.about &&
+              renderSection(
+                'About Me',
+                <Text style={styles.aboutText}>{user.about}</Text>,
+              )}
+
+            {/* Description */}
+            {user.description &&
+              renderSection(
+                'Description',
+                <Text style={styles.descriptionText}>{user.description}</Text>,
+              )}
+
+            {/* Personal Details */}
+            {renderSection(
+              'Personal Details',
+              <View>
+                {user.occupation &&
+                  renderInfoItem('Occupation', user.occupation)}
+                {user.education && renderInfoItem('Education', user.education)}
+                {user.height && renderInfoItem('Height', user.height)}
+                {user.bodyType && renderInfoItem('Body Type', user.bodyType)}
+                {user.smokingStatus &&
+                  renderInfoItem('Smoking', user.smokingStatus)}
+                {user.drinkingStatus &&
+                  renderInfoItem('Drinking', user.drinkingStatus)}
+                {user.religion && renderInfoItem('Religion', user.religion)}
+                {user.politicalViews &&
+                  renderInfoItem('Political Views', user.politicalViews)}
+              </View>,
+            )}
+
+            {/* Contact Info */}
+            {renderSection(
+              'Contact Information',
+              <View>
+                {user.email && renderInfoItem('Email', user.email)}
+                {user.phone && renderInfoItem('Phone', user.phone)}
+                {user.location &&
+                  renderInfoItem(
+                    'Location',
+                    `${user.location.city || ''}, ${user.location.state || ''}`,
+                  )}
+              </View>,
+            )}
+
+            {/* Interests */}
+            {user.interests &&
+              user.interests.length > 0 &&
+              renderSection('Interests', renderTags(user.interests))}
+
+            {/* Strengths */}
+            {user.strengths &&
+              user.strengths.length > 0 &&
+              renderSection('Strengths', renderTags(user.strengths))}
+
+            {/* Languages */}
+            {user.languages &&
+              user.languages.length > 0 &&
+              renderSection('Languages', renderTags(user.languages))}
+
+            {/* Looking For */}
+            {user.whatAmILookingFor &&
+              renderSection(
+                "What I'm Looking For",
+                <View>
+                  {user.whatAmILookingFor.relationshipType &&
+                    renderInfoItem(
+                      'Relationship Type',
+                      user.whatAmILookingFor.relationshipType,
+                    )}
+                  {user.whatAmILookingFor.communicationStyle &&
+                    renderInfoItem(
+                      'Communication Style',
+                      user.whatAmILookingFor.communicationStyle,
+                    )}
+                  {user.whatAmILookingFor.physicalAttraction &&
+                    renderInfoItem(
+                      'Physical Attraction',
+                      user.whatAmILookingFor.physicalAttraction,
+                    )}
+                  {user.whatAmILookingFor.personality &&
+                    user.whatAmILookingFor.personality.length > 0 && (
+                      <>
+                        <Text style={styles.subsectionTitle}>
+                          Desired Personality Traits:
+                        </Text>
+                        {renderTags(user.whatAmILookingFor.personality)}
+                      </>
+                    )}
+                  {user.whatAmILookingFor.activities &&
+                    user.whatAmILookingFor.activities.length > 0 && (
+                      <>
+                        <Text style={styles.subsectionTitle}>
+                          Preferred Activities:
+                        </Text>
+                        {renderTags(user.whatAmILookingFor.activities)}
+                      </>
+                    )}
+                  {user.whatAmILookingFor.qualities &&
+                    user.whatAmILookingFor.qualities.length > 0 && (
+                      <>
+                        <Text style={styles.subsectionTitle}>
+                          Important Qualities:
+                        </Text>
+                        {renderTags(user.whatAmILookingFor.qualities)}
+                      </>
+                    )}
+                </View>,
+              )}
+
+            {/* Preferences */}
+            {user.preferences &&
+              renderSection(
+                'Dating Preferences',
+                <View style={styles.preferencesContainer}>
+                  <Text style={styles.preferenceText}>
+                    Looking for {user.preferences.gender || 'anyone'} • Ages{' '}
+                    {user.preferences.ageRange?.min || 18}-
+                    {user.preferences.ageRange?.max || 99} • Within{' '}
+                    {user.preferences.distance || 50} miles
+                  </Text>
+                </View>,
+              )}
+
+            {/* Social Media */}
+            {user.socialMediaLinks &&
+              Object.keys(user.socialMediaLinks).length > 0 &&
+              renderSection(
+                'Social Media',
+                <View style={styles.socialContainer}>
+                  {Object.entries(user.socialMediaLinks).map(
+                    ([platform, url]) => (
+                      <TouchableOpacity
+                        key={platform}
+                        style={styles.socialButton}
+                      >
+                        <Ionicons
+                          name={
+                            platform === 'instagram'
+                              ? 'logo-instagram'
+                              : platform === 'facebook'
+                              ? 'logo-facebook'
+                              : platform === 'linkedin'
+                              ? 'logo-linkedin'
+                              : platform === 'twitter'
+                              ? 'logo-twitter'
+                              : 'link-outline'
+                          }
+                          size={20}
+                          color="#fff"
+                        />
+                        <Text style={styles.socialText}>{platform}</Text>
+                      </TouchableOpacity>
+                    ),
+                  )}
+                </View>,
+              )}
+
+            {/* Account Status */}
+            {(user.accountStatus || user.subscription || user.joinedDate) &&
+              renderSection(
+                'Account Information',
+                <View>
+                  {user.accountStatus &&
+                    renderInfoItem('Account Status', user.accountStatus)}
+                  {user.subscription &&
+                    renderInfoItem('Subscription', user.subscription)}
+                  {user.joinedDate &&
+                    renderInfoItem(
+                      'Joined',
+                      new Date(user.joinedDate).toLocaleDateString(),
+                    )}
+                  {user.lastOnline &&
+                    renderInfoItem(
+                      'Last Online',
+                      new Date(user.lastOnline).toLocaleString(),
+                    )}
+                  {user.isEmailVerified !== undefined &&
+                    renderInfoItem(
+                      'Email Verified',
+                      user.isEmailVerified ? 'Yes' : 'No',
+                    )}
+                  {user.isPhoneVerified !== undefined &&
+                    renderInfoItem(
+                      'Phone Verified',
+                      user.isPhoneVerified ? 'Yes' : 'No',
+                    )}
+                </View>,
+              )}
+          </View>
+        </ScrollView>
+
+        {/* Sticky Action Buttons */}
+        <View style={styles.stickyActionButtons}>
+          <View style={styles.actionButtonsContainer}>
             <TouchableOpacity
               onPress={handleDislike}
-              style={{
-                width: 40,
-                height: 40,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
+              style={styles.actionButton}
             >
               <SimpleLineIcons name="dislike" size={22} color={'white'} />
             </TouchableOpacity>
-            <TouchableOpacity
-              style={{
-                width: 40,
-                height: 40,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-              onPress={handleLike}
-            >
+            <TouchableOpacity style={styles.actionButton} onPress={handleLike}>
               <Ionicons name="heart-outline" size={30} color={'white'} />
             </TouchableOpacity>
-            <TouchableOpacity
-              style={{
-                width: 40,
-                height: 40,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-              // onPress={handleLike}
-            >
+            <TouchableOpacity style={styles.actionButton}>
               <Entypo name="dots-three-horizontal" size={30} color={'white'} />
             </TouchableOpacity>
           </View>
-        </LinearGradient>
-
-        {/* Swipe gesture handler */}
-        <PanGestureHandler
-          onGestureEvent={onGestureEvent}
-          onHandlerStateChange={onHandlerStateChange}
-        >
-          <Animated.View
-            style={[
-              styles.gestureArea,
-              { transform: [{ translateY: translateY }] },
-            ]}
-          />
-        </PanGestureHandler>
-
-        {/* Action Modal */}
-        <Modal
-          visible={isActionModalVisible}
-          transparent={true}
-          animationType="fade"
-          onRequestClose={() => setIsActionModalVisible(false)}
-        >
-          <View style={styles.actionModalContainer}>
-            <View style={styles.actionModalContent}>
-              <Text style={styles.actionModalText}>{actionMessage}</Text>
-            </View>
-          </View>
-        </Modal>
-
-        {/* Detail Modal */}
-        <Modal
-          visible={modalVisible}
-          animationType="slide"
-          transparent={true}
-          statusBarTranslucent={true}
-          onRequestClose={() => setModalVisible(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <ImageBackground
-              source={{ uri: allImages[0] }}
-              style={styles.modalContent}
-              resizeMode="cover"
-              blurRadius={8}
-            >
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setModalVisible(false)}
-              >
-                <Ionicons name="chevron-back" size={24} color="#fff" />
-              </TouchableOpacity>
-              {renderModalContent()}
-            </ImageBackground>
-          </View>
-        </Modal>
+        </View>
       </OptimizedImageBackground>
-    </GestureHandlerRootView>
+
+      {/* Action Modal for like/dislike feedback */}
+      {isActionModalVisible && (
+        <View style={styles.actionModalContainer}>
+          <View style={styles.actionModalContent}>
+            <Text style={styles.actionModalText}>{actionMessage}</Text>
+          </View>
+        </View>
+      )}
+    </View>
   );
 };
 
@@ -543,26 +382,42 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000',
   },
-  backgroundImage: {
+  fullScreenBackground: {
     flex: 1,
     width: width,
     height: height,
   },
+  scrollView: {
+    flex: 1,
+  },
+  headerSection: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 120,
+    zIndex: 100,
+  },
+  firstScreenSpacer: {
+    height: height - 250, // Reduced to make room for bottom section
+    paddingBottom: 20,
+  },
+  bottomActionSection: {},
   backButton: {
     width: 50,
     height: 50,
     position: 'absolute',
-    top: 90,
+    top: 100,
     left: 10,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1000,
-    // backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    // backgroundColor: 'rgba(0, 0, 0, 0.5)',
     borderRadius: 25,
   },
   imageIndicators: {
     position: 'absolute',
-    top: 70,
+    top: 80,
     left: 0,
     right: 0,
     flexDirection: 'row',
@@ -586,6 +441,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: '40%',
     zIndex: 5,
+    height: height - 500,
   },
   rightTapArea: {
     position: 'absolute',
@@ -594,221 +450,167 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: '40%',
     zIndex: 5,
+    height: height - 500,
   },
-  basicInfoOverlay: {
+  userInfoContainer: {
+    borderRadius: 20,
+    padding: 20,
+    marginHorizontal: 20,
+    width: width - 40,
+    marginTop: '5%',
+    paddingBottom: '15%',
+    marginBottom: '15%',
+  },
+  stickyActionButtons: {
     position: 'absolute',
-    bottom: 0,
+    bottom: 40,
     left: 0,
     right: 0,
-    borderRadius: 15,
-    paddingHorizontal: 20,
-    paddingBottom: 30,
-    paddingTop: 10,
+    alignItems: 'center',
+    zIndex: 200,
   },
   overlayName: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
     color: 'white',
     marginBottom: 5,
-    paddingTop: 120,
+    textShadowColor: 'rgba(0, 0, 0, 0.7)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
   overlayAge: {
     fontSize: 18,
     color: 'rgba(255, 255, 255, 0.9)',
-    marginBottom: 10,
-  },
-  swipeUpHint: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.7)',
-    textAlign: 'center',
     marginBottom: 20,
+    textShadowColor: 'rgba(0, 0, 0, 0.7)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
-  gestureArea: {
-    position: 'absolute',
-    bottom: 10,
-    left: 0,
-    right: 0,
-    height: '80%',
-    // backgroundColor:"red"
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-    paddingTop: 0,
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    height: height,
-    paddingTop: 50,
-  },
-  modalHeaderBar: {
+  actionButtonsContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
+    alignItems: 'center',
+    padding: 8,
+    borderRadius: 50,
+    width: '70%',
+    paddingHorizontal: 25,
     paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
-  modalHandle: {
-    width: 40,
-    height: 4,
-    backgroundColor: '#ccc',
-    borderRadius: 2,
-    alignSelf: 'center',
-  },
-  closeButton: {
-    borderRadius: 20,
-    width: 40,
-    height: 40,
+  actionButton: {
+    width: 45,
+    height: 45,
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 25,
-    marginBottom: 10,
+    borderRadius: 100,
   },
-  modalScrollView: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  modalHeader: {
-    paddingVertical: 20,
-  },
-  modalName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 5,
-  },
-  modalAge: {
-    fontSize: 16,
-    color: '#fff',
-    marginBottom: 15,
-  },
-  modalBadges: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  verifiedBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#E8F5E8',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 15,
-    gap: 5,
-  },
-  verifiedText: {
-    fontSize: 12,
-    color: '#4CAF50',
-    fontWeight: '600',
-  },
-  subscriptionBadge: {
-    backgroundColor: '#4F0D50',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 15,
-  },
-  subscriptionText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: 'bold',
+  contentContainer: {
+    padding: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   section: {
-    backgroundColor: '#0000006d',
-    borderRadius: 32,
-    padding: 16,
-    marginBottom: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: 22,
+    fontWeight: 'bold',
     color: '#fff',
-    marginBottom: 12,
+    marginBottom: 15,
     textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
   subsectionTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
-    color: '#333',
-    marginTop: 12,
-    marginBottom: 8,
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
-    padding: 16,
-  },
-  statItem: {
-    alignItems: 'center',
-  },
-  statNumber: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#4F0D50',
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 4,
+    color: '#fff',
+    marginTop: 15,
+    marginBottom: 10,
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
   aboutText: {
     fontSize: 16,
     color: '#fff',
     lineHeight: 24,
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
   descriptionText: {
     fontSize: 16,
-    color: '#fff',
+    color: 'rgba(255, 255, 255, 0.9)',
     lineHeight: 24,
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
   infoItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: 'rgba(255, 255, 255, 0.2)',
   },
   infoLabel: {
     fontSize: 16,
-    color: '#fff',
+    color: 'rgba(255, 255, 255, 0.8)',
     fontWeight: '500',
     flex: 1,
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
   infoValue: {
     fontSize: 16,
     color: '#fff',
     flex: 2,
     textAlign: 'right',
+    fontWeight: '600',
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
   tagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 10,
   },
   tag: {
-    backgroundColor: '#ffffffff',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 25,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   tagText: {
-    color: 'black',
+    color: '#000',
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   preferencesContainer: {
-    backgroundColor: '#f8f9fa',
-    padding: 12,
-    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    padding: 15,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   preferenceText: {
     fontSize: 16,
-    color: '#333',
+    color: '#fff',
     textAlign: 'center',
+    fontWeight: '500',
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
   socialContainer: {
     flexDirection: 'row',
@@ -818,48 +620,40 @@ const styles = StyleSheet.create({
   socialButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    gap: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 25,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   socialText: {
     fontSize: 14,
-    color: '#4F0D50',
-    fontWeight: '500',
+    color: '#fff',
+    fontWeight: '600',
     textTransform: 'capitalize',
-  },
-  actionButtonsContainer: {
-    position: 'absolute',
-    right: 15,
-    bottom: 120,
-    zIndex: 10,
-  },
-  actionButton: {
-    width: 60,
-    height: 60,
-    borderWidth: 2,
-    borderRadius: 100,
-    borderColor: '#ffffff8d',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#ffffff2b',
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
   actionModalContainer: {
-    flex: 1,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   actionModalContent: {
-    padding: 20,
+    padding: 30,
     backgroundColor: 'white',
-    borderRadius: 10,
-    width: '100%',
-    height: '100%',
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
+    minWidth: 200,
   },
   actionModalText: {
     fontSize: 24,
