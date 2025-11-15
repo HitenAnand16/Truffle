@@ -102,12 +102,14 @@ const UserProfileScreen = () => {
           >
             <View style={styles.buttonsSection}>
               <View style={styles.userInfoContainer}>
-                <Text style={styles.overlayName}>
+                <View style={{ }}>
+                  <Text style={styles.overlayName}>
                   {currentUser.firstName}, {currentUser.age}
                 </Text>
                 <Text style={styles.overlayLocation}>
                   {currentUser.location.city}
                 </Text>
+                </View>
 
                 {/* Action Buttons */}
                 <View style={styles.actionButtonsContainer}>
@@ -506,14 +508,14 @@ const styles = StyleSheet.create({
   actionButton: {
     backgroundColor: '#D9D9D9', // More opaque background
     paddingHorizontal: 20,
-    paddingVertical: 5,
+    paddingVertical: 10,
     borderRadius: 25,
     flexDirection: 'row',
     alignItems: 'center',
   },
   actionButtonText: {
     color: 'black',
-    fontSize: 12,
+    fontSize: 15,
     fontWeight: '600',
   },
   // Edit profile screen styles

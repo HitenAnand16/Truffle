@@ -80,7 +80,7 @@ const EmailVerificationScreen = ({ navigation, route }: any) => {
         setIsVerifying(false);
       }
     } catch (error) {
-      console.error('Error sending email OTP:', error);
+      console.error('Error sending email OTP:', error);h
       Alert.alert('Error', 'Failed to send email OTP. Please try again.');
       setIsOtpSent(false);
       setModalVisible(false);

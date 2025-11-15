@@ -23,7 +23,9 @@ import { useUserActions } from '../../context/UserActionsContext';
 const { width } = Dimensions.get('window'); // Get screen width for responsive design
 
 const Home = ({ navigation }: any) => {
-  const { addLikedUser, addDislikedUser, isUserActioned } = useUserActions();
+  const { addLikedUser, addDislikedUser, isUserActioned, removeLikedUser, removeDislikedUser } = useUserActions();
+  const [lastAction, setLastAction] = useState<null | { userId: string; action: 'like' | 'dislike' }>(null);
+  const [undoneUserId, setUndoneUserId] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0); // Track the current card
   const [isModalVisible, setIsModalVisible] = useState(false); // Track modal visibility
   const [actionMessage, setActionMessage] = useState(''); // Message in the modal
@@ -36,6 +38,8 @@ const Home = ({ navigation }: any) => {
   const handleLike = useCallback(() => {
     if (currentIndex < availableUsers.length) {
       const currentUser = availableUsers[currentIndex];
+      // record last action so it can be undone once
+      setLastAction({ userId: currentUser.id, action: 'like' });
       addLikedUser(currentUser.id);
       setActionMessage('Liked!'); // Set message for like
       setIsModalVisible(true); // Show popup
@@ -52,6 +56,8 @@ const Home = ({ navigation }: any) => {
   const handleDislike = useCallback(() => {
     if (currentIndex < availableUsers.length) {
       const currentUser = availableUsers[currentIndex];
+      // record last action so it can be undone once
+      setLastAction({ userId: currentUser.id, action: 'dislike' });
       addDislikedUser(currentUser.id);
       setActionMessage('Disliked!'); // Set message for dislike
       setIsModalVisible(true); // Show popup
@@ -64,6 +70,29 @@ const Home = ({ navigation }: any) => {
       }, 2000);
     }
   }, [currentIndex, availableUsers, addDislikedUser]);
+
+  const handleUndo = useCallback(() => {
+    if (!lastAction) return;
+    const { userId, action } = lastAction;
+    if (action === 'like') {
+      removeLikedUser(userId);
+    } else {
+      removeDislikedUser(userId);
+    }
+    // mark undone user so when availableUsers updates we can set the index
+    setUndoneUserId(userId);
+    setLastAction(null); // allow only one undo
+  }, [lastAction, removeLikedUser, removeDislikedUser]);
+
+  // When availableUsers updates after undo, move the deck to the undone user if present
+  React.useEffect(() => {
+    if (!undoneUserId) return;
+    const idx = availableUsers.findIndex(u => u.id === undoneUserId);
+    if (idx !== -1) {
+      setCurrentIndex(idx);
+    }
+    setUndoneUserId(null);
+  }, [availableUsers, undoneUserId]);
 
   const handleCardClick = useCallback(
     (user: any) => {
@@ -93,7 +122,7 @@ const Home = ({ navigation }: any) => {
             gap: 30,
           }}
         >
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => { if (lastAction) { handleUndo(); } else { navigation.goBack?.(); } }}>
             <Image
               style={{
                 width: 24,

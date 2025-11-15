@@ -5,6 +5,7 @@ import InitialScreen from '../screens/auth/InitialScreen';
 import RegisterScreen from '../screens/auth/register/RegisterScreen';
 import TrackScreen from '../screens/auth/TrackScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
+import OtpVerifyScreen from '../screens/auth/OtpVerifyScreen';
 import EmailVerificationScreen from '../screens/auth/register/EmailVerification';
 import Detail from '../screens/auth/register/Detail';
 import UploadPicRegisgter from '../screens/auth/register/UploadPicRegisgter';
@@ -24,6 +25,7 @@ export type RootStackParamList = {
     name: string; 
     userId?: string; 
   };
+  OtpVerify: { phone: string; otpId: string };
   Detail: undefined;
   UploadPicRegister: undefined;
   userDetail: undefined;
@@ -67,6 +69,7 @@ const AppNavigator = () => {
           <Stack.Screen name="Detail" component={Detail} />
           <Stack.Screen name="UploadPicRegister" component={UploadPicRegisgter} />
           <Stack.Screen name="Track" component={TrackScreen} />
+          <Stack.Screen name="OtpVerify" component={OtpVerifyScreen} />
           <Stack.Screen name="Login" component={LoginScreen} />
 
           {/* After login, the main flow with Bottom Tab Bar */}

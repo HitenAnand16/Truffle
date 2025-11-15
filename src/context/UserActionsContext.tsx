@@ -5,6 +5,8 @@ interface UserActionsContextType {
   dislikedUsers: string[];
   addLikedUser: (userId: string) => void;
   addDislikedUser: (userId: string) => void;
+  removeLikedUser: (userId: string) => void;
+  removeDislikedUser: (userId: string) => void;
   isUserActioned: (userId: string) => boolean;
 }
 
@@ -34,6 +36,14 @@ export const UserActionsProvider: React.FC<UserActionsProviderProps> = ({ childr
     setDislikedUsers(prev => [...prev, userId]);
   };
 
+  const removeLikedUser = (userId: string) => {
+    setLikedUsers(prev => prev.filter(id => id !== userId));
+  };
+
+  const removeDislikedUser = (userId: string) => {
+    setDislikedUsers(prev => prev.filter(id => id !== userId));
+  };
+
   const isUserActioned = (userId: string) => {
     return likedUsers.includes(userId) || dislikedUsers.includes(userId);
   };
@@ -43,6 +53,8 @@ export const UserActionsProvider: React.FC<UserActionsProviderProps> = ({ childr
     dislikedUsers,
     addLikedUser,
     addDislikedUser,
+    removeLikedUser,
+    removeDislikedUser,
     isUserActioned,
   };
 
