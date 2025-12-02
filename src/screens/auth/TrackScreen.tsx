@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import React, { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,10 +19,29 @@ import { useNavigation } from '@react-navigation/native';
 interface ApplicationStatus {
   id: number;
   title: string;
-  description: string;
+  date?: string;
   isCompleted: boolean;
   isActive: boolean;
-  date?: string;
+  dotColor?: string;
+}
+
+function formatDate(iso?: string) {
+  if (!iso) return undefined;
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  } catch (e) {
+    return iso;
+  }
+}
+
+function normalizeStatus(raw?: string) {
+  const s = (raw || '').trim().toUpperCase();
+  if (['APPROVED', 'REJECTED', 'UNDER_REVIEW', 'SUBMITTED', 'PENDING'].includes(s)) return s;
+  // Fallbacks for common variants
+  if (['IN_REVIEW', 'REVIEW'].includes(s)) return 'UNDER_REVIEW';
+  if (['PENDING_APPROVAL', 'WAITING', 'QUEUED'].includes(s)) return 'PENDING';
+  return s || 'PENDING';
 }
 
 const TrackScreen = () => {
@@ -30,6 +51,7 @@ const TrackScreen = () => {
   const [applicationStatuses, setApplicationStatuses] = useState<
     ApplicationStatus[]
   >([]);
+  const [appName, setAppName] = useState<string | null>(null);
   const navigation = useNavigation();
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -42,50 +64,56 @@ const TrackScreen = () => {
     setIsLoading(true);
 
     try {
-      // Simulate API call - replace with your actual API endpoint
-      // const response = await fetch(`https://your-api.com/track/${email}`)
-      // const data = await response.json()
+      const encoded = encodeURIComponent(email.trim());
+      const url = `https://truffle-0ol8.onrender.com/api/invite/track/email?email=${encoded}`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        throw new Error(`Server returned ${res.status}`);
+      }
+      const json = await res.json();
 
-      // Simulated response for demo - replace with actual API call
-      setTimeout(() => {
-        const mockTrackingData = [
-          {
-            id: 1,
-            title: 'Application Submitted',
-            description: 'Your application has been successfully submitted',
-            isCompleted: true,
-            isActive: false,
-            date: '2024-10-15',
-          },
-          {
-            id: 2,
-            title: 'In Review',
-            description:
-              'Your application is currently being reviewed by our team',
-            isCompleted: true,
-            isActive: true,
-            date: '2024-10-18',
-          },
-          {
-            id: 3,
-            title: 'Processing',
-            description: 'Your application is being processed',
-            isCompleted: false,
-            isActive: false,
-          },
-          {
-            id: 4,
-            title: 'Accepted',
-            description: 'Your application has been accepted',
-            isCompleted: false,
-            isActive: false,
-          },
-        ];
+      if (!json || !json.application) {
+        throw new Error('Application not found');
+      }
 
-        setApplicationStatuses(mockTrackingData);
-        setShowTracking(true);
-        setIsLoading(false);
-      }, 1500);
+      const application = json.application;
+      setAppName(application.name || null);
+
+      // Map API status to the three-step timeline
+      const status = normalizeStatus(application.status);
+      const createdAt = application.createdAt;
+      const updatedAt = application.updatedAt;
+
+      const timeline: ApplicationStatus[] = [
+        {
+          id: 1,
+          title: 'Application Submitted',
+          date: createdAt ? formatDate(createdAt) : undefined,
+          isCompleted: ['PENDING', 'SUBMITTED', 'UNDER_REVIEW', 'APPROVED', 'REJECTED'].includes(status),
+          isActive: status === 'PENDING' || status === 'SUBMITTED',
+          dotColor: '#2CC84E',
+        },
+        {
+          id: 2,
+          title: 'Application Under Review',
+          date: status === 'UNDER_REVIEW' || status === 'APPROVED' || status === 'REJECTED' ? (updatedAt ? formatDate(updatedAt) : undefined) : undefined,
+          isCompleted: ['UNDER_REVIEW', 'APPROVED', 'REJECTED'].includes(status),
+          isActive: status === 'UNDER_REVIEW',
+          dotColor: '#F9D74A',
+        },
+        {
+          id: 3,
+          title: status === 'REJECTED' ? 'Approval/ Rejection' : 'Approval/ Rejection',
+          date: (status === 'APPROVED' || status === 'REJECTED') && updatedAt ? formatDate(updatedAt) : undefined,
+          isCompleted: ['APPROVED', 'REJECTED'].includes(status),
+          isActive: ['APPROVED', 'REJECTED'].includes(status),
+          dotColor: '#000000',
+        },
+      ];
+
+      setApplicationStatuses(timeline);
+      setShowTracking(true);
+      setIsLoading(false);
     } catch (error) {
       console.error('Error fetching tracking data:', error);
       Alert.alert(
@@ -111,7 +139,7 @@ const TrackScreen = () => {
           <View
             style={[
               styles.statusDot,
-              status.isCompleted && styles.statusDotCompleted,
+              status.isCompleted && { backgroundColor: status.dotColor || '#4caf50', borderColor: status.dotColor || '#4caf50' },
               status.isActive && styles.statusDotActive,
             ]}
           />
@@ -119,7 +147,7 @@ const TrackScreen = () => {
             <View
               style={[
                 styles.statusLine,
-                status.isCompleted && styles.statusLineCompleted,
+                status.isCompleted && { backgroundColor: status.dotColor || '#4caf50' },
               ]}
             />
           )}
@@ -129,19 +157,10 @@ const TrackScreen = () => {
           <Text
             style={[
               styles.statusTitle,
-              status.isCompleted && styles.statusTitleCompleted,
               status.isActive && styles.statusTitleActive,
             ]}
           >
             {status.title}
-          </Text>
-          <Text
-            style={[
-              styles.statusDescription,
-              status.isCompleted && styles.statusDescriptionCompleted,
-            ]}
-          >
-            {status.description}
           </Text>
           {status.date && <Text style={styles.statusDate}>{status.date}</Text>}
         </View>
@@ -151,74 +170,67 @@ const TrackScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation?.goBack()}
-          >
-            <Ionicons name="chevron-back" size={28} color="#333" />
-          </TouchableOpacity>
-          <Text style={styles.title}>Settings</Text>
-        </View>
-        {!showTracking ? (
-          // Email Input Form
-          <>
-            <Text style={styles.header}>Track Your Application</Text>
-            <Text style={styles.subHeader}>
-              Enter your registered email to check application status
-            </Text>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{flex:1}}>
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          <View style={styles.topRow}>
+            <TouchableOpacity onPress={() => navigation?.goBack()} style={styles.iconBack}>
+              <Ionicons name="chevron-back" size={26} color="#333" />
+            </TouchableOpacity>
+            <Text style={styles.screenTitle}>Track Your Invite</Text>
+          </View>
 
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Email Address</Text>
-              <TextInput
-                style={styles.emailInput}
-                placeholder="Enter your registered email"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
+          {!showTracking ? (
+            <>
+              <Text style={styles.sectionLabel}>Enter Email</Text>
 
-              <TouchableOpacity
-                style={[
-                  styles.trackButton,
-                  isLoading && styles.trackButtonDisabled,
-                ]}
-                onPress={handleTrackApplication}
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <ActivityIndicator color="#fff" size="small" />
-                ) : (
-                  <Text style={styles.trackButtonText}>Track Application</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </>
-        ) : (
-          // Tracking Results
-          <>
-            <View style={styles.trackingHeader}>
-              <TouchableOpacity
-                style={styles.backButton}
-                onPress={handleBackToSearch}
-              >
-                <Text style={styles.backButtonText}>← Back</Text>
-              </TouchableOpacity>
-              <Text style={styles.header}>Application Status</Text>
-              <Text style={styles.subHeader}>Tracking for: {email}</Text>
-            </View>
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  style={styles.emailInput}
+                  placeholder="Youremail@mail.com"
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              </View>
 
-            <View style={styles.progressContainer}>
-              {applicationStatuses.map((status, index) =>
-                renderStatusItem(status, index),
-              )}
-            </View>
-          </>
-        )}
-      </ScrollView>
+              <View style={styles.bottomButtonWrap}>
+                <TouchableOpacity
+                  style={[styles.primaryButton, isLoading && styles.primaryButtonDisabled]}
+                  onPress={handleTrackApplication}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.primaryButtonText}>Next</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </>
+          ) : (
+            <>
+              <Text style={styles.statusHeader}>Status</Text>
+              <View style={styles.progressContainer}>
+                {applicationStatuses.map((s, i) => renderStatusItem(s, i))}
+              </View>
+
+              <View style={styles.infoBox}>
+                <Text style={styles.infoBoxText}>
+                  You are in the queue. We'll keep you updated and notify you when you are up next.
+                </Text>
+              </View>
+
+              <View style={styles.bottomButtonWrap}>
+                <TouchableOpacity style={styles.primaryButton} onPress={() => {/* invite friends action */}}>
+                  <Text style={styles.primaryButtonText}>Invite Friends</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -244,18 +256,11 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#FFFFFF',
   },
   scrollContainer: {
     padding: 20,
     paddingBottom: 40,
-  },
-  header: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
-    marginBottom: 8,
-    textAlign: 'center',
   },
   subHeader: {
     fontSize: 16,
@@ -297,9 +302,9 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   statusLine: {
-    width: 3,
+    width: 2,
     height: 60,
-    backgroundColor: '#e0e0e0',
+    backgroundColor: '#E8DFF1',
     marginTop: 4,
   },
   statusLineCompleted: {
@@ -310,31 +315,19 @@ const styles = StyleSheet.create({
     paddingTop: 2,
   },
   statusTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
-    color: '#999999',
-    marginBottom: 4,
-  },
-  statusTitleCompleted: {
-    color: '#4caf50',
+    color: '#1A1A1A',
+    marginBottom: 2,
   },
   statusTitleActive: {
     color: '#2196f3',
     fontWeight: 'bold',
   },
-  statusDescription: {
-    fontSize: 14,
-    color: '#cccccc',
-    lineHeight: 20,
-  },
-  statusDescriptionCompleted: {
-    color: '#666666',
-  },
   statusDate: {
     fontSize: 12,
-    color: '#999999',
-    marginTop: 4,
-    fontStyle: 'italic',
+    color: '#6E57A3',
+    marginTop: 2,
   },
   inputContainer: {
     paddingHorizontal: 20,
@@ -375,16 +368,73 @@ const styles = StyleSheet.create({
   trackingHeader: {
     marginBottom: 30,
   },
-  backButton: {
-    alignSelf: 'flex-start',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    marginBottom: 10,
-  },
   backButtonText: {
     fontSize: 16,
     color: '#4F0D50',
     fontWeight: '500',
+  },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 10,
+  },
+  iconBack: {
+    padding: 6,
+    marginRight: 8,
+  },
+  screenTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#111',
+  },
+  sectionLabel: {
+    paddingHorizontal: 20,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111',
+    marginTop: 20,
+  },
+  inputWrapper: {
+    paddingHorizontal: 20,
+    marginTop: 12,
+  },
+  bottomButtonWrap: {
+    paddingHorizontal: 20,
+    marginTop: 30,
+    alignItems: 'center',
+  },
+  primaryButton: {
+    backgroundColor: '#4F0D50',
+    paddingVertical: 14,
+    paddingHorizontal: 36,
+    borderRadius: 28,
+    minWidth: 160,
+    alignItems: 'center',
+  },
+  primaryButtonDisabled: {
+    opacity: 0.6,
+  },
+  primaryButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  statusHeader: {
+    textAlign: 'center',
+    fontSize: 18,
+    fontWeight: '700',
+    marginVertical: 18,
+  },
+  infoBox: {
+    backgroundColor: '#F6EEF1',
+    marginHorizontal: 20,
+    padding: 14,
+    borderRadius: 6,
+    marginTop: 18,
+  },
+  infoBoxText: {
+    color: '#6b6b6b',
+    textAlign: 'center',
   },
 });
 

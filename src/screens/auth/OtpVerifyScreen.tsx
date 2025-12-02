@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert, StyleSheet } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const API_VERIFY = 'https://truffle-0ol8.onrender.com/api/verify/login';
 
@@ -27,8 +28,14 @@ const OtpVerifyScreen = () => {
       // Expecting backend to return a success indicator
       // Example user provided earlier: { status: true, data: { otpId: '...' }, message: '...' }
       if (resp?.data?.status) {
-        // On successful verification, navigate to main app flow.
-        navigation.navigate('Main' as never);
+        // Persist token and user for subsequent API calls
+        const token = resp?.data?.token;
+        const user = resp?.data?.user;
+        if (token) await AsyncStorage.setItem('auth_token', token);
+        if (user) await AsyncStorage.setItem('auth_user', JSON.stringify(user));
+
+        // After OTP, take user to preferences questions first
+        navigation.navigate('PreferencesQuestions' as never);
         console.log('OTP verified successfully', resp.data);
       } else {
         const msg = resp?.data?.message || 'OTP verification failed';

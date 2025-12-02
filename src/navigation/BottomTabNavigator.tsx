@@ -31,7 +31,7 @@ const BottomTabNavigator = () => {
               <OptimizedImage
                 source={require('../../assets/logo.png')}
                 style={{
-                  resizeMode: 'cover',
+                  resizeMode: 'contain',
                   width: focused ? 50 : 40,
                   height: focused ? 25 : 20,
                   tintColor: undefined,

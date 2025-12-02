@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Configure axios instance
-const API_BASE_URL = 'https://api.truffle-dating.com'; // Replace with your actual API URL
+const API_BASE_URL = 'https://truffle-0ol8.onrender.com'; // Replace with your actual API URL
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000,
@@ -344,6 +344,31 @@ export const userAPI = {
         success: false,
         message: 'Failed to upload picture. Please try again.',
       };
+    }
+  },
+};
+
+// Preferences / Questions API
+export interface PreferenceQuestionOption {
+  id: string;
+  label: string;
+}
+
+export interface PreferenceQuestion {
+  id: string;
+  question: string;
+  options: PreferenceQuestionOption[];
+  type?: 'single' | 'multi';
+}
+
+export const preferencesAPI = {
+  getQuestions: async (): Promise<ApiResponse<PreferenceQuestion[]>> => {
+    try {
+      const response = await api.get<ApiResponse<PreferenceQuestion[]>>('/api/admin/preferences');
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.data) return error.response.data;
+      return { success: false, message: 'Failed to load preferences' } as ApiResponse<PreferenceQuestion[]>;
     }
   },
 };

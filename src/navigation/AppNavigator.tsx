@@ -9,6 +9,9 @@ import OtpVerifyScreen from '../screens/auth/OtpVerifyScreen';
 import EmailVerificationScreen from '../screens/auth/register/EmailVerification';
 import Detail from '../screens/auth/register/Detail';
 import UploadPicRegisgter from '../screens/auth/register/UploadPicRegisgter';
+import PreferencesQuestionScreen from '../screens/auth/PreferencesQuestionScreen';
+import PreferencesSummaryScreen from '../screens/auth/PreferencesSummaryScreen';
+import LetsUnmaskYouScreen from '../screens/auth/LetsUnmaskYouScreen';
 import UserDetails from '../screens/main/userDetail';
 import BottomTabNavigator from './BottomTabNavigator';
 import { UserActionsProvider } from '../context/UserActionsContext';
@@ -26,6 +29,9 @@ export type RootStackParamList = {
     userId?: string; 
   };
   OtpVerify: { phone: string; otpId: string };
+  PreferencesQuestions: undefined;
+  PreferencesSummary: { answers: Record<string, string | string[]>; questions: any[] } | undefined;
+  LetsUnmaskYou: undefined;
   Detail: undefined;
   UploadPicRegister: undefined;
   userDetail: undefined;
@@ -71,6 +77,9 @@ const AppNavigator = () => {
           <Stack.Screen name="Track" component={TrackScreen} />
           <Stack.Screen name="OtpVerify" component={OtpVerifyScreen} />
           <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="PreferencesQuestions" component={PreferencesQuestionScreen} />
+          <Stack.Screen name="PreferencesSummary" component={PreferencesSummaryScreen} />
+          <Stack.Screen name="LetsUnmaskYou" component={LetsUnmaskYouScreen} />
 
           {/* After login, the main flow with Bottom Tab Bar */}
           <Stack.Screen name="Main" component={BottomTabNavigator} />

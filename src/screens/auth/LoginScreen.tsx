@@ -73,7 +73,7 @@ const LoginScreen = () => {
         style={styles.input}
       />
 
-      <TouchableOpacity style={styles.button} onPress={()=>{navigation.navigate("Main")}} disabled={loading}>
+      <TouchableOpacity style={styles.button} onPress={handleSendOtp} disabled={loading}>
         {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Send OTP</Text>}
       </TouchableOpacity>
     </View>

@@ -7,6 +7,9 @@ import {
   TouchableOpacity,
   Dimensions,
   ImageBackground,
+  TextInput,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import {
   OptimizedImage,
@@ -27,11 +30,151 @@ const UserProfileScreen = () => {
   const [viewMode, setViewMode] = useState<'buttons' | 'view' | 'edit'>(
     'buttons',
   );
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    name: `${currentUser.firstName}${currentUser.lastName ? ' ' + currentUser.lastName : ''}`,
+    age: String(currentUser.age || ''),
+    occupation: currentUser.occupation || '',
+    description: currentUser.description || '',
+  });
+
+  const AUTH_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OTA5ZDlhMGVlYmUwZDMwZGE2MDgyZGYiLCJpYXQiOjE3NjQ0OTM0NjAsImV4cCI6MTc2NTA5ODI2MH0.wK3YkmBYJceWJXQi8lZ50hJY6Xnuu6f8Y6FXvrBSz9I';
+
+  const [loadingUser, setLoadingUser] = useState(false);
+  const [user, setUser] = useState<any>(currentUser);
+
+  const normalizeApiUser = (api: any) => {
+    if (!api) return null;
+    return {
+      id: api._id,
+      firstName: api.name || '',
+      lastName: '',
+      email: api.email || '',
+      phone: api.phone || '',
+      age: api.age || 0,
+      profilePicture: api.picture || currentUser.profilePicture,
+      additionalPhotos: Array.isArray(api.pictures) ? api.pictures : [],
+      about: api.about || '',
+      description: api.description || '',
+      interests: Array.isArray(api.interests) ? api.interests : [],
+      occupation: api.occupation || '',
+      education: api.education || '',
+      height: api.height?.value || currentUser.height,
+      bodyType: api.bodyType || currentUser.bodyType,
+      smokingStatus: api.smokingStatus || currentUser.smokingStatus,
+      drinkingStatus: api.drinkingStatus || currentUser.drinkingStatus,
+      religion: api.religion || currentUser.religion,
+      politicalViews: api.politicalViews || currentUser.politicalViews,
+      languages: api.languages || currentUser.languages,
+      whatAmILookingFor: api.whatAmILookingFor || currentUser.whatAmILookingFor,
+      location: {
+        city: api.occupation || 'Unknown',
+        state: '',
+        country: '',
+        latitude: api.location?.coordinates?.[1] ?? currentUser.location.latitude,
+        longitude: api.location?.coordinates?.[0] ?? currentUser.location.longitude,
+      },
+      socialMediaLinks: api.instagram ? { instagram: api.instagram } : currentUser.socialMediaLinks,
+      preferences: currentUser.preferences,
+      isVerified: api.isVerified ?? currentUser.isVerified,
+      isEmailVerified: currentUser.isEmailVerified,
+      isPhoneVerified: currentUser.isPhoneVerified,
+      profileCompleteness: currentUser.profileCompleteness,
+      likes: currentUser.likes,
+      dislikes: currentUser.dislikes,
+      matches: currentUser.matches,
+      views: currentUser.views,
+      lastOnline: currentUser.lastOnline,
+      joinedDate: currentUser.joinedDate,
+      accountStatus: currentUser.accountStatus,
+      subscription: currentUser.subscription,
+    };
+  };
+
+  // Fetch current user on mount
+  React.useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        setLoadingUser(true);
+        const res = await fetch('https://truffle-0ol8.onrender.com/api/profile', {
+          headers: {
+            Authorization: `Bearer ${AUTH_TOKEN}`,
+            Accept: 'application/json',
+          },
+        });
+        if (!res.ok) {
+          const txt = await res.text().catch(() => '');
+          throw new Error(`Fetch profile failed: ${res.status} ${txt}`);
+        }
+        const data = await res.json();
+        console.log('profile api response', data);
+        const apiUser = data?.user ?? data;
+        const normalized = normalizeApiUser(apiUser);
+        if (__DEV__) {
+          console.log('normalized profile user', normalized);
+        }
+        if (normalized) {
+          setUser(normalized);
+          setForm({
+            name: `${normalized.firstName}${normalized.lastName ? ' ' + normalized.lastName : ''}`,
+            age: String(normalized.age || ''),
+            occupation: normalized.occupation || '',
+            description: normalized.description || '',
+          });
+        }
+      } catch (e) {
+        console.error('fetch profile error', e);
+      } finally {
+        setLoadingUser(false);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  const handleSave = useCallback(async () => {
+    try {
+      setSaving(true);
+      const payload: any = {
+        name: form.name?.trim(),
+        age: form.age ? Number(form.age) : undefined,
+        occupation: form.occupation?.trim(),
+        description: form.description?.trim(),
+      };
+      // Remove undefined fields
+      Object.keys(payload).forEach(k => payload[k] === undefined && delete payload[k]);
+
+      const res = await fetch('https://truffle-0ol8.onrender.com/api/profile/update', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${AUTH_TOKEN}`,
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const txt = await res.text().catch(() => '');
+        throw new Error(`Update failed: ${res.status} ${txt}`);
+      }
+      const data = await res.json().catch(() => ({}));
+      console.log('profile update response', data);
+      const updated = normalizeApiUser((data as any)?.user ?? data);
+      if (updated) setUser(updated);
+      Alert.alert('Success', 'Profile updated successfully');
+      setViewMode('buttons');
+    } catch (e: any) {
+      console.error('profile update error', e);
+      Alert.alert('Error', e?.message || 'Failed to update profile');
+    } finally {
+      setSaving(false);
+    }
+  }, [form]);
 
   // All images (profile + additional)
   const allImages = [
-    currentUser.profilePicture,
-    ...(currentUser.additionalPhotos || []),
+    user.profilePicture,
+    ...(user.additionalPhotos || []),
   ];
 
   // Navigate through images
@@ -44,6 +187,7 @@ const UserProfileScreen = () => {
       prev => (prev - 1 + allImages.length) % allImages.length,
     );
   }, [allImages.length]);
+  
   const renderSection = (title: string, content: React.ReactNode) => (
     <View style={userProfileStyles.section}>
       <Text style={userProfileStyles.sectionTitle}>{title}</Text>
@@ -73,7 +217,7 @@ const UserProfileScreen = () => {
   // Render buttons screen
   const renderButtonsScreen = () => (
     <OptimizedImageBackground
-      source={{ uri: currentUser.profilePicture }}
+      source={{ uri: user.profilePicture }}
       style={userProfileStyles.fullScreenBackground}
       resizeMode="cover"
       blurRadius={17}
@@ -91,7 +235,7 @@ const UserProfileScreen = () => {
           Profile
         </Text>
         <ImageBackground
-          source={{ uri: currentUser.profilePicture }}
+          source={{ uri: user.profilePicture }}
           resizeMode="cover"
           imageStyle={{ borderRadius: 43 }}
           style={styles.profileBackground}
@@ -104,10 +248,10 @@ const UserProfileScreen = () => {
               <View style={styles.userInfoContainer}>
                 <View style={{ }}>
                   <Text style={styles.overlayName}>
-                  {currentUser.firstName}, {currentUser.age}
+                  {user.firstName}, {user.age}
                 </Text>
                 <Text style={styles.overlayLocation}>
-                  {currentUser.location.city}
+                  {user.location?.city}
                 </Text>
                 </View>
 
@@ -196,27 +340,27 @@ const UserProfileScreen = () => {
           >
             <View style={userProfileStyles.userInfoContainer}>
               <Text style={userProfileStyles.overlayName}>
-                {currentUser.firstName} {currentUser.lastName}
+                {user.firstName} {user.lastName}
               </Text>
-              <Text style={userProfileStyles.overlayAge}>{currentUser.location.city}</Text>
+              <Text style={userProfileStyles.overlayAge}>{user.location?.city}</Text>
             </View>
           </LinearGradient>
 
           {/* Content Sections with Blur Background */}
           <View style={userProfileStyles.contentContainer}>
             {/* About */}
-            {currentUser.about &&
+            {user.about &&
               renderSection(
                 'About Me',
-                <Text style={userProfileStyles.aboutText}>{currentUser.about}</Text>,
+                <Text style={userProfileStyles.aboutText}>{user.about}</Text>,
               )}
 
             {/* Description */}
-            {currentUser.description &&
+            {user.description &&
               renderSection(
                 'Description',
                 <Text style={userProfileStyles.descriptionText}>
-                  {currentUser.description}
+                  {user.description}
                 </Text>,
               )}
 
@@ -224,22 +368,14 @@ const UserProfileScreen = () => {
             {renderSection(
               'Personal Details',
               <View>
-                {currentUser.occupation &&
-                  renderInfoItem('Occupation', currentUser.occupation)}
-                {currentUser.education &&
-                  renderInfoItem('Education', currentUser.education)}
-                {currentUser.height &&
-                  renderInfoItem('Height', currentUser.height)}
-                {currentUser.bodyType &&
-                  renderInfoItem('Body Type', currentUser.bodyType)}
-                {currentUser.smokingStatus &&
-                  renderInfoItem('Smoking', currentUser.smokingStatus)}
-                {currentUser.drinkingStatus &&
-                  renderInfoItem('Drinking', currentUser.drinkingStatus)}
-                {currentUser.religion &&
-                  renderInfoItem('Religion', currentUser.religion)}
-                {currentUser.politicalViews &&
-                  renderInfoItem('Political Views', currentUser.politicalViews)}
+                {user.occupation && renderInfoItem('Occupation', user.occupation)}
+                {user.education && renderInfoItem('Education', user.education)}
+                {user.height && renderInfoItem('Height', user.height)}
+                {user.bodyType && renderInfoItem('Body Type', user.bodyType)}
+                {user.smokingStatus && renderInfoItem('Smoking', user.smokingStatus)}
+                {user.drinkingStatus && renderInfoItem('Drinking', user.drinkingStatus)}
+                {user.religion && renderInfoItem('Religion', user.religion)}
+                {user.politicalViews && renderInfoItem('Political Views', user.politicalViews)}
               </View>,
             )}
 
@@ -247,106 +383,96 @@ const UserProfileScreen = () => {
             {renderSection(
               'Contact Information',
               <View>
-                {currentUser.email &&
-                  renderInfoItem('Email', currentUser.email)}
-                {currentUser.phone &&
-                  renderInfoItem('Phone', currentUser.phone)}
-                {currentUser.location &&
+                {user.email && renderInfoItem('Email', user.email)}
+                {user.phone && renderInfoItem('Phone', user.phone)}
+                {user.location &&
                   renderInfoItem(
                     'Location',
-                    `${currentUser.location.city || ''}, ${
-                      currentUser.location.state || ''
+                    `${user.location.city || ''}, ${
+                      user.location.state || ''
                     }`,
                   )}
               </View>,
             )}
 
             {/* Interests */}
-            {currentUser.interests &&
-              currentUser.interests.length > 0 &&
-              renderSection('Interests', renderTags(currentUser.interests))}
+            {user.interests && user.interests.length > 0 && renderSection('Interests', renderTags(user.interests))}
 
             {/* Strengths */}
-            {currentUser.strengths &&
-              currentUser.strengths.length > 0 &&
-              renderSection('Strengths', renderTags(currentUser.strengths))}
+            {user.strengths && user.strengths.length > 0 && renderSection('Strengths', renderTags(user.strengths))}
 
             {/* Languages */}
-            {currentUser.languages &&
-              currentUser.languages.length > 0 &&
-              renderSection('Languages', renderTags(currentUser.languages))}
+            {user.languages && user.languages.length > 0 && renderSection('Languages', renderTags(user.languages))}
 
             {/* Looking For */}
-            {currentUser.whatAmILookingFor &&
+            {user.whatAmILookingFor &&
               renderSection(
                 "What I'm Looking For",
                 <View>
-                  {currentUser.whatAmILookingFor.relationshipType &&
+                  {user.whatAmILookingFor.relationshipType &&
                     renderInfoItem(
                       'Relationship Type',
-                      currentUser.whatAmILookingFor.relationshipType,
+                      user.whatAmILookingFor.relationshipType,
                     )}
-                  {currentUser.whatAmILookingFor.communicationStyle &&
+                  {user.whatAmILookingFor.communicationStyle &&
                     renderInfoItem(
                       'Communication Style',
-                      currentUser.whatAmILookingFor.communicationStyle,
+                      user.whatAmILookingFor.communicationStyle,
                     )}
-                  {currentUser.whatAmILookingFor.physicalAttraction &&
+                  {user.whatAmILookingFor.physicalAttraction &&
                     renderInfoItem(
                       'Physical Attraction',
-                      currentUser.whatAmILookingFor.physicalAttraction,
+                      user.whatAmILookingFor.physicalAttraction,
                     )}
-                  {currentUser.whatAmILookingFor.personality &&
-                    currentUser.whatAmILookingFor.personality.length > 0 && (
+                  {user.whatAmILookingFor.personality &&
+                    user.whatAmILookingFor.personality.length > 0 && (
                       <>
                         <Text style={userProfileStyles.subsectionTitle}>
                           Desired Personality Traits:
                         </Text>
-                        {renderTags(currentUser.whatAmILookingFor.personality)}
+                        {renderTags(user.whatAmILookingFor.personality)}
                       </>
                     )}
-                  {currentUser.whatAmILookingFor.activities &&
-                    currentUser.whatAmILookingFor.activities.length > 0 && (
+                  {user.whatAmILookingFor.activities &&
+                    user.whatAmILookingFor.activities.length > 0 && (
                       <>
                         <Text style={userProfileStyles.subsectionTitle}>
                           Preferred Activities:
                         </Text>
-                        {renderTags(currentUser.whatAmILookingFor.activities)}
+                        {renderTags(user.whatAmILookingFor.activities)}
                       </>
                     )}
-                  {currentUser.whatAmILookingFor.qualities &&
-                    currentUser.whatAmILookingFor.qualities.length > 0 && (
+                  {user.whatAmILookingFor.qualities &&
+                    user.whatAmILookingFor.qualities.length > 0 && (
                       <>
                         <Text style={userProfileStyles.subsectionTitle}>
                           Important Qualities:
                         </Text>
-                        {renderTags(currentUser.whatAmILookingFor.qualities)}
+                        {renderTags(user.whatAmILookingFor.qualities)}
                       </>
                     )}
                 </View>,
               )}
 
             {/* Preferences */}
-            {currentUser.preferences &&
+            {user.preferences &&
               renderSection(
                 'Dating Preferences',
                 <View style={userProfileStyles.preferencesContainer}>
                   <Text style={userProfileStyles.preferenceText}>
-                    Looking for {currentUser.preferences.gender || 'anyone'} •
-                    Ages {currentUser.preferences.ageRange?.min || 18}-
-                    {currentUser.preferences.ageRange?.max || 99} • Within{' '}
-                    {currentUser.preferences.distance || 50} miles
+                    Looking for {user.preferences.gender || 'anyone'} •
+                    Ages {user.preferences.ageRange?.min || 18}-
+                    {user.preferences.ageRange?.max || 99} • Within {user.preferences.distance || 50} miles
                   </Text>
                 </View>,
               )}
 
             {/* Social Media */}
-            {currentUser.socialMediaLinks &&
-              Object.keys(currentUser.socialMediaLinks).length > 0 &&
+            {user.socialMediaLinks && Object.keys(user.socialMediaLinks).length > 0 &&
               renderSection(
                 'Social Media',
                 <View style={userProfileStyles.socialContainer}>
-                  {Object.entries(currentUser.socialMediaLinks).map(
+                  {Object.entries(user.socialMediaLinks).map(
                     ([platform, url]) => (
                       <TouchableOpacity
                         key={platform}
@@ -375,36 +501,16 @@ const UserProfileScreen = () => {
               )}
 
             {/* Account Status */}
-            {(currentUser.accountStatus ||
-              currentUser.subscription ||
-              currentUser.joinedDate) &&
+            {(user.accountStatus || user.subscription || user.joinedDate) &&
               renderSection(
                 'Account Information',
                 <View>
-                  {currentUser.accountStatus &&
-                    renderInfoItem('Account Status', currentUser.accountStatus)}
-                  {currentUser.subscription &&
-                    renderInfoItem('Subscription', currentUser.subscription)}
-                  {currentUser.joinedDate &&
-                    renderInfoItem(
-                      'Joined',
-                      new Date(currentUser.joinedDate).toLocaleDateString(),
-                    )}
-                  {currentUser.lastOnline &&
-                    renderInfoItem(
-                      'Last Online',
-                      new Date(currentUser.lastOnline).toLocaleString(),
-                    )}
-                  {currentUser.isEmailVerified !== undefined &&
-                    renderInfoItem(
-                      'Email Verified',
-                      currentUser.isEmailVerified ? 'Yes' : 'No',
-                    )}
-                  {currentUser.isPhoneVerified !== undefined &&
-                    renderInfoItem(
-                      'Phone Verified',
-                      currentUser.isPhoneVerified ? 'Yes' : 'No',
-                    )}
+                  {user.accountStatus && renderInfoItem('Account Status', user.accountStatus)}
+                  {user.subscription && renderInfoItem('Subscription', user.subscription)}
+                  {user.joinedDate && renderInfoItem('Joined', new Date(user.joinedDate).toLocaleDateString())}
+                  {user.lastOnline && renderInfoItem('Last Online', new Date(user.lastOnline).toLocaleString())}
+                  {user.isEmailVerified !== undefined && renderInfoItem('Email Verified', user.isEmailVerified ? 'Yes' : 'No')}
+                  {user.isPhoneVerified !== undefined && renderInfoItem('Phone Verified', user.isPhoneVerified ? 'Yes' : 'No')}
                 </View>,
               )}
           </View>
@@ -422,14 +528,60 @@ const UserProfileScreen = () => {
             <Ionicons name="chevron-back" size={30} color="#333" />
           </TouchableOpacity>
           <Text style={styles.editTitle}>Edit Profile</Text>
-          <TouchableOpacity>
-            <Text style={styles.saveText}>Save</Text>
+          <TouchableOpacity disabled={saving} onPress={handleSave}>
+            {saving ? (
+              <ActivityIndicator color="#4F0D50" />
+            ) : (
+              <Text style={styles.saveText}>Save</Text>
+            )}
           </TouchableOpacity>
         </View>
         <ScrollView style={styles.editContent}>
-          <Text style={styles.placeholderText}>
-            Edit Profile functionality coming soon...
-          </Text>
+          <View style={styles.formGroup}>
+            <Text style={styles.inputLabel}>Name</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Your name"
+              value={form.name}
+              onChangeText={t => setForm(f => ({ ...f, name: t }))}
+              placeholderTextColor="#999"
+            />
+          </View>
+          <View style={styles.formGroup}>
+            <Text style={styles.inputLabel}>Age</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Age"
+              value={form.age}
+              onChangeText={t => setForm(f => ({ ...f, age: t }))}
+              inputMode="numeric"
+              keyboardType="number-pad"
+              placeholderTextColor="#999"
+            />
+          </View>
+          <View style={styles.formGroup}>
+            <Text style={styles.inputLabel}>Occupation</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Occupation"
+              value={form.occupation}
+              onChangeText={t => setForm(f => ({ ...f, occupation: t }))}
+              placeholderTextColor="#999"
+            />
+          </View>
+          <View style={styles.formGroup}>
+            <Text style={styles.inputLabel}>Description</Text>
+            <TextInput
+              style={[styles.input, styles.textarea]}
+              placeholder="Tell something about you"
+              value={form.description}
+              onChangeText={t => setForm(f => ({ ...f, description: t }))}
+              placeholderTextColor="#999"
+              multiline
+              numberOfLines={5}
+              textAlignVertical="top"
+            />
+          </View>
         </ScrollView>
       </SafeAreaView>
     </View>
@@ -551,6 +703,28 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
     marginTop: 50,
+  },
+  formGroup: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: 14,
+    color: '#333',
+    marginBottom: 6,
+    fontWeight: '600',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+    color: '#222',
+    backgroundColor: '#fff',
+  },
+  textarea: {
+    minHeight: 120,
   },
 });
 

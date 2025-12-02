@@ -12,7 +12,6 @@ import {
   OptimizedImage,
   OptimizedImageBackground,
 } from '../../components/OptimizedImage';
-import { demoData } from '../../../demoData'; // Importing demo data
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Octicons from 'react-native-vector-icons/Octicons';
@@ -24,16 +23,59 @@ const { width } = Dimensions.get('window'); // Get screen width for responsive d
 
 const Home = ({ navigation }: any) => {
   const { addLikedUser, addDislikedUser, isUserActioned, removeLikedUser, removeDislikedUser } = useUserActions();
+  const [profiles, setProfiles] = useState<Array<any>>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
   const [lastAction, setLastAction] = useState<null | { userId: string; action: 'like' | 'dislike' }>(null);
   const [undoneUserId, setUndoneUserId] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0); // Track the current card
   const [isModalVisible, setIsModalVisible] = useState(false); // Track modal visibility
   const [actionMessage, setActionMessage] = useState(''); // Message in the modal
 
+  // Fetch profiles from API
+  React.useEffect(() => {
+    const fetchProfiles = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const res = await fetch('https://truffle-0ol8.onrender.com/api/profiles', {
+          headers: {
+            Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OTA5ZDlhMGVlYmUwZDMwZGE2MDgyZGYiLCJpYXQiOjE3NjQ0OTM0NjAsImV4cCI6MTc2NTA5ODI2MH0.wK3YkmBYJceWJXQi8lZ50hJY6Xnuu6f8Y6FXvrBSz9I',
+            Accept: 'application/json',
+          },
+        });
+        if (!res.ok) {
+          throw new Error(`Request failed: ${res.status}`);
+        }
+        const data = await res.json();
+        // Normalize API fields to match UI usage
+        const normalized = (Array.isArray(data) ? data : []).map((p: any) => ({
+          id: p._id,
+          firstName: p.name,
+          lastName: '',
+          age: p.age,
+          profilePicture: p.picture,
+          location: {
+            city: p?.occupation || 'Unknown',
+            coordinates: p?.location?.coordinates || [0, 0],
+          },
+          description: p.description,
+        }));
+        console.log('profiles', normalized);
+        setProfiles(normalized);
+      } catch (e: any) {
+        setError(e?.message || 'Failed to load profiles');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProfiles();
+  }, []);
+
   // Filter out users that have been liked or disliked
   const availableUsers = useMemo(() => {
-    return demoData.filter(user => !isUserActioned(user.id));
-  }, [isUserActioned]);
+    return profiles.filter(user => !isUserActioned(user.id));
+  }, [isUserActioned, profiles]);
 
   const handleLike = useCallback(() => {
     if (currentIndex < availableUsers.length) {
@@ -109,6 +151,7 @@ const Home = ({ navigation }: any) => {
           flexDirection: 'row',
           justifyContent: 'space-between',
           alignItems: 'center',
+          marginBottom:20
         }}
       >
         <OptimizedImage
@@ -161,6 +204,22 @@ const Home = ({ navigation }: any) => {
       
       <View style={styles.cardStack}>
         {(() => {
+          if (loading) {
+            return (
+              <View style={styles.noUsersContainer}>
+                <Text style={styles.noUsersText}>Loading profiles…</Text>
+              </View>
+            );
+          }
+
+          if (error) {
+            return (
+              <View style={styles.noUsersContainer}>
+                <Text style={styles.noUsersText}>Error: {error}</Text>
+              </View>
+            );
+          }
+
           // Show message if no available users
           if (availableUsers.length === 0) {
             return (
@@ -284,8 +343,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   logo: {
-    width: 60,
-    height: 60,
+    width: 40,
+    height: 40,
     resizeMode: 'contain',
     marginBottom: 10,
   },
